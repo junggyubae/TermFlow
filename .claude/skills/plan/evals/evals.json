@@ -1,0 +1,20 @@
+{
+  "skill_name": "planning-guide",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Help me plan a new feature: real-time collaborative document editor. I have 2 weeks and a team of 3 (1 backend, 1 frontend, 1 devops). Users need to edit simultaneously and see changes instantly. We want to keep it simple. What should I plan for? What are the big decisions? What could go wrong?",
+      "expected_output": "Comprehensive planning guidance covering: problem clarification, key architectural decisions (CRDTs vs OT, WebSocket vs HTTP long-polling, centralized vs distributed), phases breakdown (1-2 weeks), risk assessment, and planning document structure"
+    },
+    {
+      "id": 2,
+      "prompt": "I'm torn between two architecture approaches for my system: Option A (monolith with async jobs) vs Option B (microservices). Help me think through the trade-offs. We have 4 engineers, 6-week timeline, and want to iterate fast. Which should we choose?",
+      "expected_output": "Clear trade-off analysis with: pros/cons table for each option, implications for each (team structure, deployment, scaling, debugging), which best fits the constraints, and decision guidance based on the user's specific situation"
+    },
+    {
+      "id": 3,
+      "prompt": "Help me structure a planning document for a new project. I have the product vision and architectural decisions figured out. What should I document? In what order? How detailed? What common mistakes should I avoid?",
+      "expected_output": "Planning document structure guide with: recommended sections (product/decisions/architecture/build/stretch), what each section should contain, example table of contents, depth guidance, and checklist for common pitfalls"
+    }
+  ]
+}

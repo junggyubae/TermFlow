@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(swift:*)",
+      "Bash(python:*)",
+      "Bash(pip:*)",
+      "Bash(git:*)",
+      "Bash(brew:*)",
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "defaultMode": "default"
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; [[ \"$f\" == *.{js,ts,jsx,tsx,json}* ]] && npx prettier --write \"$f\" 2>/dev/null || true; }",
+            "statusMessage": "Formatting code..."
+          }
+        ]
+      }
+    ]
+  },
+  "model": "claude-opus-4-6",
+  "language": "english"
+}
