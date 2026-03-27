@@ -18,6 +18,8 @@ const errorBanner = document.getElementById("error-banner");
 const errorMessage = document.getElementById("error-message");
 const btnDismissError = document.getElementById("btn-dismiss-error");
 const vocabInput = document.getElementById("vocab-input");
+const btnDeleteAllVocab = document.getElementById("btn-delete-all-vocab");
+const btnDeleteAllHistory = document.getElementById("btn-delete-all-history");
 
 // ---------------------------------------------------------------------------
 // State
@@ -163,6 +165,14 @@ vocabInput.addEventListener("keydown", (e) => {
 // Load vocab on startup
 renderVocabList();
 
+// Delete all vocabulary
+btnDeleteAllVocab.addEventListener("click", () => {
+  if (confirm("Delete all vocabulary terms? This cannot be undone.")) {
+    localStorage.removeItem("vd_vocab");
+    renderVocabList();
+  }
+});
+
 // ---------------------------------------------------------------------------
 // History toggle
 // ---------------------------------------------------------------------------
@@ -192,6 +202,15 @@ historyToggle.addEventListener("click", () => {
 
 // Initialize toggle text
 historyToggle.textContent = "+ Show history";
+
+// Delete all history
+btnDeleteAllHistory.addEventListener("click", () => {
+  if (confirm("Delete all transcript history? This cannot be undone.")) {
+    localStorage.removeItem("vd_history");
+    history.innerHTML = "";
+    syncHistoryEmptyState();
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Current transcript buttons

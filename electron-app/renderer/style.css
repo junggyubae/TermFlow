@@ -269,6 +269,23 @@ main {
   color: #f87171;
 }
 
+.vocab-delete-all-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 6px 10px;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+}
+
+.vocab-delete-all-btn:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+}
+
 /* History section */
 .history-section {
   width: 100%;
@@ -314,6 +331,30 @@ main {
 
 .history-panel.hidden {
   display: none;
+}
+
+.history-panel-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history-delete-all-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 8px;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+}
+
+.history-delete-all-btn:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
 }
 
 /* Scrollable history */
