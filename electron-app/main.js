@@ -211,6 +211,12 @@ let streamingFilePath = null;
 let streamingInterval = null;
 
 ipcMain.on("start-recording", () => {
+  // Clean up stale process reference
+  if (recorderProcess && recorderProcess.killed) {
+    console.log("[Main] Cleaning up stale recorder process");
+    recorderProcess = null;
+  }
+
   if (recorderProcess) {
     console.log("[Main] Recorder already running");
     return;
@@ -260,10 +266,6 @@ ipcMain.on("start-recording", () => {
     send("error", { code: "MIC_DENIED", message: err.message });
     recorderProcess = null;
   });
-
-  recorderProcess.on("close", (code) => {
-    console.log("[Recorder] closed with code:", code);
-  });
 });
 
 function startStreamingTranscription() {
@@ -306,7 +308,8 @@ ipcMain.on("stop-recording", () => {
   recorderProcess.stdin.write("stop\n");
   send("recording-status", { status: "transcribing" });
 
-  recorderProcess.on("close", async (code) => {
+  // Use once to ensure handler only fires once, even if somehow called multiple times
+  recorderProcess.once("close", async (code) => {
     recorderProcess = null;
     const wavPath = recorderStdout.trim();
     console.log("[Main] Recorder exited code:", code, "wavPath:", wavPath);
