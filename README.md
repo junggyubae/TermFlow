@@ -43,3 +43,7 @@ One command sets up dependencies, saves your API key, and launches the app. See 
 | [doc/5-stretch.md](doc/5-stretch.md) | Stretch goals — what was built, what was skipped |
 | [doc/6-reflection.md](doc/6-reflection.md) | What I learned building this |
 | [doc/pivot1/](doc/pivot1/) | Why we switched the polishing model from Qwen2.5 to Claude Haiku — validation results and test logs |
+
+---
+
+**Project:** CL Summer Internship 1st Round Task - Voice Dictation Desktop App
