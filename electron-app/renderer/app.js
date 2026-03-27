@@ -27,9 +27,10 @@ const btnDeleteAllHistory = document.getElementById("btn-delete-all-history");
 let isRecording = false;
 let sidecarReady = false;
 let currentPolished = "";
-let activeCard = null;       // the card currently being built
-let activeRawEl = null;      // raw text element in active card
-let activePolishEl = null;   // polished text element in active card
+let isTranscriptInProgress = false; // True when transcribing or polishing
+let activeCard = null;       // the card currently being built (ONLY for history)
+let activeRawEl = null;      // raw text element in active card (ONLY for history)
+let activePolishEl = null;   // polished text element in active card (ONLY for history)
 let activeLangBadge = null;
 let activeCopyRawBtn = null;
 let activeCopyPolishBtn = null;
@@ -374,20 +375,13 @@ function createCard() {
 // ---------------------------------------------------------------------------
 window.api.onRecordingStatus(({ status }) => {
   if (status === "recording") {
-    // Move previous transcript to history if it exists
-    if (activeCard && !activeCard.parentElement) {
-      // Card already in history, do nothing
-    } else if (activeCard && activeCard.parentElement === history) {
-      // Card is in history, do nothing
-    } else if (currentRaw.textContent && currentRaw.textContent !== "Recording...") {
-      // Move current transcript to history
-      const card = createCard();
-      activeRawEl.textContent = currentRaw.textContent;
-      activePolishEl.textContent = currentPolish.textContent;
-      activeCard = card;
+    // Save previous transcript to history BEFORE clearing current area
+    if (currentRaw.textContent && currentRaw.textContent !== "Recording...") {
+      saveToHistory(currentRaw.textContent, currentPolish.textContent, "");
     }
 
     isRecording = true;
+    isTranscriptInProgress = true;
     btnRecord.classList.add("recording");
     recordIcon.textContent = "■";
     recordLabel.textContent = "Stop";
@@ -400,10 +394,11 @@ window.api.onRecordingStatus(({ status }) => {
   if (status === "transcribing") {
     statusText.textContent = "Transcribing...";
     btnRecord.disabled = true;
-    if (activeRawEl) activeRawEl.textContent = "Transcribing...";
+    isTranscriptInProgress = true;
   }
   if (status === "polishing") {
     statusText.textContent = "Polishing...";
+    isTranscriptInProgress = true;
   }
 });
 
@@ -411,20 +406,11 @@ window.api.onRecordingStatus(({ status }) => {
 // Transcription result
 // ---------------------------------------------------------------------------
 window.api.onTranscriptionResult(({ raw, language, confidence }) => {
-  // Update current transcript
+  // Update ONLY the current transcript display area (not history)
   currentRaw.textContent = raw;
-
-  // Update card if it exists
-  if (activeRawEl) activeRawEl.textContent = raw;
-
-  // Language badge hidden from view, but stored for internal tracking
-  if (activeLangBadge) {
-    activeLangBadge.className = "badge badge-hidden";
-  }
 
   currentPolished = "";
   currentPolish.innerHTML = '<span class="cursor"></span>';
-  if (activePolishEl) activePolishEl.innerHTML = '<span class="cursor"></span>';
 });
 
 // ---------------------------------------------------------------------------
@@ -433,17 +419,14 @@ window.api.onTranscriptionResult(({ raw, language, confidence }) => {
 window.api.onPolishToken(({ token }) => {
   currentPolished += token;
   currentPolish.innerHTML = currentPolished + '<span class="cursor"></span>';
-  if (activePolishEl) {
-    activePolishEl.innerHTML = currentPolished + '<span class="cursor"></span>';
-  }
 });
 
 window.api.onPolishDone(({ text }) => {
   currentPolished = text;
   currentPolish.textContent = text;
-  if (activePolishEl) activePolishEl.textContent = text;
 
   isRecording = false;
+  isTranscriptInProgress = false;
   btnRecord.classList.remove("recording");
   recordIcon.textContent = "●";
   recordLabel.textContent = "Record";
@@ -476,6 +459,12 @@ document.addEventListener("keydown", (e) => {
 
 function toggleRecording() {
   if (btnRecord.disabled) return;
+
+  // Prevent starting new recording if transcript is in progress
+  if (!isRecording && isTranscriptInProgress) {
+    statusText.textContent = "Transcript in progress...";
+    return;
+  }
 
   if (!isRecording) {
     window.api.startRecording();
