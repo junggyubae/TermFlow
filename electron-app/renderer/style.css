@@ -124,6 +124,12 @@ main {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.record-btn.processing {
+  border-color: #444;
+  background: #1a1a1a;
+  opacity: 0.6;
+}
+
 #record-icon {
   font-size: 28px;
   color: #ef4444;
