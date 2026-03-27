@@ -244,7 +244,7 @@ ipcMain.on("start-recording", () => {
 
   recorderProcess.stderr.on("data", (data) => {
     const line = data.toString().trim();
-    console.log("[Recorder stderr]", line);
+    console.log("[Recorder stderr]", `"${line}"`);
 
     // Capture file path for streaming
     if (line.startsWith("FILE_PATH:")) {
@@ -255,8 +255,8 @@ ipcMain.on("start-recording", () => {
       startStreamingTranscription();
     }
 
-    if (line.startsWith("RECORDING")) {
-      console.log("[Main] Recording started");
+    if (line === "RECORDING" || line.startsWith("RECORDING")) {
+      console.log("[Main] Recording started, sending event");
       send("recording-status", { status: "recording" });
     }
   });
