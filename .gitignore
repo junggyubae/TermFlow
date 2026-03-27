@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+venv/
+*.egg-info/
+__pycache__/
+
+# Large files and models
+*.pth
+*.bin
+*.ggml
+*.pb
+electron-app/node_modules/
+sidecar/venv/
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+*.cache
+
+# Temporary files
+/tmp
+/temp
+*.tmp
+
+# Build artifacts
+dist/
+build/
+
+# App data
+electron-app/node_modules/
+sidecar/__pycache__/
+*.pyc
+
+# Large Electron/model files (users download separately)
+electron-app/node_modules/electron/
+*.dmg
+*.exe
+*.zip
