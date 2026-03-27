@@ -8,104 +8,31 @@ Build these only after P0 and P1 are complete and working. Do not sacrifice core
 
 | Stretch Goal | Decision | Reason |
 |---|---|---|
-| Global hotkey | **Build** | High value, low effort — `globalShortcut` in Electron is a few lines |
-| Insertion into active text field | **Skip** | Requires macOS Accessibility API; complex, brittle, high risk to core quality |
-| Local/offline-first | **Already done** | Whisper is fully local; only polish requires network |
-| Personal dictionary | **Already built** as custom vocabulary (Step 8) | Called out in task; high evaluator weight |
-| Reusable text snippets | **Skip** | Scope creep; no clear user need in this flow |
-| Tone / cleanup style settings | **Build if time** | Simple dropdown passed to polish prompt — low effort if core is done |
-| Packaging for simple install | **Build** | Required for the app to feel complete |
+| Global hotkey | **SKIP** | ⌘R works in-window; global hotkey requires extra Electron permissions and was deprioritized to focus on core stability |
+| Insertion into active text field | **SKIP** | Requires macOS Accessibility API; complex, brittle, high risk to core quality |
+| Local/offline-first | **DONE** | Whisper is fully local; only polish requires network |
+| Personal dictionary | **DONE** | Built as custom vocabulary panel (collapsible, per-term delete, Enter to add) |
+| Reusable text snippets | **SKIP** | Scope creep; no clear user need in this flow |
+| Tone / cleanup style settings | **SKIP** | Ran out of time; core pipeline took longer than expected |
+| Push-to-talk mode | **SKIP** | Not implemented; toggle-to-record covers the use case well |
+| Export transcript | **SKIP** | Not implemented; copy-to-clipboard covers the primary need |
+| Packaging for simple install | **SKIP** | Attempted — electron-builder works but macOS Gatekeeper blocks unsigned Python binaries inside .app bundles. Without an Apple Developer certificate, packaging doesn't simplify install. App runs cleanly via `npx electron .` instead. |
 
 ---
 
-## Global Hotkey
+## What Was Built Beyond P0/P1
 
-Trigger record/stop from any app without focusing the window.
-
-**File:** `electron-app/main.js`
-
-```js
-const { globalShortcut } = require('electron')
-
-app.on('ready', () => {
-  globalShortcut.register('CommandOrControl+Shift+Space', () => {
-    if (state === 'idle') startRecording()
-    else if (state === 'recording') stopRecording()
-  })
-})
-
-app.on('will-quit', () => globalShortcut.unregisterAll())
-```
+- **Streaming polish output** — tokens stream in real-time as Claude generates them (cursor animation)
+- **Partial live transcription** — raw text updates every 150ms while recording using Whisper tiny
+- **Auto venv setup** — app creates and installs the Python venv on first launch automatically
+- **Auto-restart sidecar** — health poller auto-restarts the sidecar once on failure before showing fatal error
+- **History persistence** — transcripts survive app restarts via localStorage, with per-card delete and inline edit
+- **Custom vocabulary** — terms passed as Whisper `initial_prompt` and injected into the Claude system prompt
 
 ---
 
-## Push-to-Talk Mode
+## Notes on Skipped Items
 
-Hold a key to record; release to stop.
+**Packaging** was the most-attempted skip. The attempt revealed that macOS code signing is a hard requirement for distributing apps with embedded binaries — not just a nice-to-have. The app uses a Python interpreter (unsigned) inside the bundle, which macOS Gatekeeper blocks regardless of entitlements. A proper solution would require an Apple Developer Program membership ($99/year) for signing and notarization. The dev-mode run (`npx electron .`) is fully functional and was used for all testing.
 
-- Register `keydown` / `keyup` on a configurable key (default: `fn` or user-set)
-- On hold: start recording; on release: stop and process
-- Can coexist with toggle-to-record — user picks mode in settings
-
----
-
-## Tone / Cleanup Style Settings
-
-Let the user control how aggressively the polish layer edits.
-
-- Dropdown in settings: `Verbatim` / `Natural` / `Formal`
-- Passed as a param in `POST /polish` body
-- Sidecar adjusts system prompt per mode:
-  - `Verbatim` — fix only punctuation and spacing, keep everything else
-  - `Natural` — remove fillers, light cleanup (default)
-  - `Formal` — full cleanup, formal register, structured paragraphs
-
----
-
-## Export Transcript
-
-Save output to file.
-
-- "Export" button in history panel
-- Options: `.txt` (plain) or `.md` (with timestamp header)
-- Uses Electron's `dialog.showSaveDialog`
-
----
-
-## Packaging for Simple Install
-
-Ship as a `.dmg` for one-click install.
-
-**File:** `electron-app/package.json` (add `build` config)
-
-```json
-"build": {
-  "appId": "com.yourname.voicedictation",
-  "mac": { "target": "dmg", "arch": ["arm64", "x64"] },
-  "extraResources": [
-    { "from": "../sidecar", "to": "sidecar" },
-    { "from": "../swift-audio/recorder", "to": "recorder" }
-  ],
-  "entitlements": "entitlements.plist"
-}
-```
-
-**`entitlements.plist`:**
-```xml
-<key>com.apple.security.device.audio-input</key><true/>
-<key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
-```
-
-**Path resolution in `main.js`:**
-```js
-const resourcesPath = app.isPackaged
-  ? process.resourcesPath
-  : path.join(__dirname, '..')
-
-const sidecarPath = path.join(resourcesPath, 'sidecar', 'server.py')
-const recorderPath = path.join(resourcesPath, 'recorder')
-```
-
-```bash
-cd electron-app && npm run dist
-```
+**Global hotkey** was deprioritized because ⌘R works well when the app is focused, and the app is small enough to leave visible. A future version could use `globalShortcut` in Electron's main process with a few lines of code.

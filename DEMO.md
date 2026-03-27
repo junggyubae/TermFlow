@@ -1,213 +1,184 @@
-# Quick Demo Guide
+# Demo Guide for Evaluators
 
-Get the app running in 10 minutes and test all features.
+This guide is for graders and evaluators assessing the Voice Dictation app. It covers what was built, how to run it, and what to look for when testing each requirement.
 
 ---
 
-## ⚡ Quick Start (5 minutes)
+## What Was Built
 
-### 1. Prerequisites Check
+A macOS desktop app for Korean-English bilingual voice dictation. The user speaks naturally in mixed Korean and English, and the app returns clean, paste-ready text.
+
+**Core pipeline:**
+1. User presses record → Swift binary captures mic input
+2. User presses stop → faster-whisper transcribes locally
+3. Claude Haiku polishes the transcript (removes fillers, fixes spacing, preserves English terms)
+4. Result streams token-by-token into the UI
+
+---
+
+## Setup (Required Before Testing)
+
+See **SETUP.md** for full instructions. Quick version:
+
 ```bash
-# Verify you have these installed
-node --version    # v18+
-python3 --version # 3.9+
-swiftc --version  # Swift toolchain
-
-# Get your Anthropic API key from console.anthropic.com
-```
-
-### 2. Clone & Setup
-```bash
-cd /path/to/cl_r1
-
-# Install Node dependencies
-cd electron-app
-npm install
-
-# Install Python dependencies
-cd ../sidecar
+# 1. Install Python dependencies
+cd src/sidecar
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cd ..
-```
+deactivate
+cd ../..
 
-### 3. Start the App
-Open **two terminal windows:**
+# 2. Install Node dependencies
+cd src/electron-app
+npm install
+cd ../..
 
-**Terminal 1 — Sidecar (Flask backend):**
-```bash
-cd sidecar
-source venv/bin/activate
-export ANTHROPIC_API_KEY="sk-ant-..."  # your key
-python server.py
-# Output: "Running on http://localhost:5001"
-```
-
-**Terminal 2 — Electron app:**
-```bash
-cd electron-app
-export ANTHROPIC_API_KEY="sk-ant-..."  # your key
+# 3. Run
+cd src/electron-app
+export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
+export WHISPER_MODEL=medium
 npx electron .
 ```
 
-✓ App window opens!
+**Note on first run:** The Whisper model (~1.5 GB) downloads automatically on first transcription. Subsequent runs load from cache in ~5 seconds. The terminal will show `[Sidecar] Whisper medium loaded in X.Xs` when ready — the UI status also updates to "Press Record or ⌘R".
 
 ---
 
-## 🎤 Test Features (5 minutes)
+## Feature Checklist
 
-### Feature 1: Basic Recording
-1. Click **"Press Record or ⌘R"** button (or press ⌘R)
-2. **Speak clearly:** "Hello, this is a test recording"
-3. Click button again to stop (or press ⌘R)
-4. **Expected:** Text appears in "Raw" section, then polished version appears below
-5. Click **"Copy"** button next to polished text → paste somewhere to verify
+### P0 — Core Requirements
 
-### Feature 2: Korean + English Code-Switching
-1. Click Record
-2. **Speak:** "머신러닝에서 overfitting을 regularization으로 방지할 수 있어"
-   - (In machine learning, you can prevent overfitting using regularization)
-3. Stop recording
-4. **Expected:**
-   - Raw: Korean text with possible spacing issues
-   - Polished: Clean Korean with proper spacing, English terms preserved
+**Toggle-to-record**
+- Click the Record button or press **⌘R** to start and stop
+- Button label and status text update to reflect state (Listening → Transcribing → Polishing → Done)
 
-### Feature 3: Custom Vocabulary
-1. Click **"+ Show Custom Vocabulary"** button
-2. Type: **"regularization"** and press Enter
-3. Click Record
-4. **Speak:** "regularization is important in machine learning"
-5. Stop recording
-6. **Expected:** "regularization" is preserved exactly in both raw and polished output
+**Multilingual transcription**
+- Test with Korean-only, English-only, and mixed Korean-English speech
+- Suggested phrase: *"GitHub에서 merge conflict 나면 rebase하거나 merge해야 돼"*
+- Expected: English terms (GitHub, merge conflict, rebase) preserved exactly; Korean cleaned
 
-### Feature 4: History
-1. Click **"+ Show History"** button
-2. Make another recording (any text)
-3. **Expected:** Previous recordings appear in history panel with timestamps
-4. Click **"Copy"** on any past transcript
-5. Click **"Edit"** to modify past transcripts
+**Transcription output**
+- Raw Whisper output shown in "Raw" section
+- Polished Claude output streams in below it
 
-### Feature 5: Keyboard Shortcuts
-- Press **⌘R** to toggle recording (same as clicking button)
-- Press **⌘C** while not selecting text → copies current polished transcript
+**LLM polish layer**
+- Filler words removed: 음, 어, 그러니까, um, uh
+- Korean spacing corrected
+- Punctuation added
+- English technical terms preserved exactly (not translated)
+
+**Editable output**
+- Click "Edit" next to any polished transcript to edit inline
+- Click "Done" to save the edit
+
+**Copy to clipboard**
+- "Copy" button next to Raw and Polished sections
+- **⌘C** copies the current polished transcript when no text is selected
+
+**Error handling**
+- If the sidecar fails, it auto-restarts once before showing a fatal error
+- Error messages appear in a dismissible banner
 
 ---
 
-## 🧪 Expected Behavior
+### P1 — Strongly Preferred
 
-| Feature | What to Expect |
-|---------|---|
-| **Recording** | Button changes to "Stop", status shows "Listening..." |
-| **Transcription** | After 1-2 seconds, raw text appears (may have fillers, spacing issues) |
-| **Polish** | Text streams in token-by-token, fixing punctuation and spacing |
-| **Latency** | < 500ms from recording stop to first token appearing |
-| **History** | Past transcripts always visible, survive app restart |
-| **Vocab** | Custom terms preserved exactly in output |
-| **Copy** | Text pasted cleanly without formatting |
+**Streaming output**
+- Polished text streams token-by-token as Claude generates it (not displayed all at once)
+- A blinking cursor appears while streaming
 
----
+**Transcript history**
+- Click "+ Show History" to open the history panel
+- Past transcripts persist across app restarts (stored in localStorage)
+- Each entry has: timestamp, raw text, polished text, Copy button, Edit button, Delete button
+- "Delete All History" button at the bottom
 
-## 🐛 Troubleshooting
+**Custom vocabulary**
+- Click "+ Show Custom Vocabulary" to open the vocab panel
+- Type a term and press Enter to add it
+- Terms are passed to both Whisper (as `initial_prompt`) and Claude (injected into system prompt)
+- Test: add "regularization", record *"regularization is important in machine learning"* — term should appear exactly as typed
+- Per-term delete button; "Delete All" button available
 
-### "Sidecar unavailable" message
-- Check Terminal 1: is sidecar running?
-- Check port 5001: `lsof -i :5001`
-- Kill if stuck: `lsof -i :5001 | grep -v COMMAND | awk '{print $2}' | xargs kill -9`
-- Restart sidecar
+**Korean-English code-switching**
+- Core requirement — see multilingual transcription test above
+- The polish layer is explicitly instructed never to translate; output language must match input language
 
-### "No transcript appears after recording"
-- Check Terminal 2 console for errors
-- Verify microphone permission: System Preferences > Security & Privacy > Microphone
-- Check ANTHROPIC_API_KEY is set: `echo $ANTHROPIC_API_KEY`
+**Privacy-conscious architecture**
+- Audio is captured and transcribed entirely on-device (Whisper, no upload)
+- Only the text transcript is sent to Claude API for polishing
+- No audio ever leaves the machine
 
-### "Whisper model downloading very slowly"
-- This is normal on first run (~5-10 minutes for 1.5GB model)
-- Models cached to `~/.cache/huggingface/`
-- Next runs will be fast (~5 seconds)
-- To skip: `export WHISPER_MODEL=tiny` (smaller, faster, lower quality)
-
-### "Polish text looks wrong"
-- Check Terminal 1 logs for Claude API errors
-- Verify API key is valid
-- Check sidecar is responding: `curl http://localhost:5001/health`
+**Empty state UX**
+- On first launch (no history), history panel shows "No history yet"
+- Status shows "Loading Server" while sidecar is starting, then "Press Record or ⌘R" when ready
 
 ---
 
-## 🎯 Full Walkthrough Script (3 minutes)
+### P2 — Stretch Goals
 
-Use this to demo everything in sequence:
-
-1. **Start app** (see Quick Start above)
-
-2. **Test 1 — English:**
-   - Record: "The quick brown fox jumps over the lazy dog"
-   - Expected: Clean English with proper punctuation
-
-3. **Test 2 — Korean:**
-   - Record: "안녕하세요 저는 음 개발자입니다 그래서 뭐"
-   - Expected: Korean with fillers (음, 그래서, 뭐) removed, spacing corrected
-
-4. **Test 3 — Code-Switching:**
-   - Record: "GitHub에서 merge conflict 나면 rebase하거나 merge해야 돼"
-   - Expected: English terms (GitHub, merge conflict, rebase) preserved, Korean cleaned
-
-5. **Test 4 — With Vocabulary:**
-   - Show vocabulary panel, add "GitHub" and "merge"
-   - Record the same phrase
-   - Expected: Terms preserved exactly (case-sensitive, exact format)
-
-6. **Test 5 — History:**
-   - Show history panel
-   - All 4 recordings should appear
-   - Try copying an old one
-   - Try editing one
-
-7. **Test 6 — Keyboard:**
-   - Press ⌘R to start/stop (instead of clicking)
-   - Press ⌘C to copy current transcript
+| Goal | Status | Notes |
+|---|---|---|
+| Global hotkey | **Skipped** | ⌘R works in-window; global requires additional Electron permissions |
+| Push-to-talk | **Skipped** | Toggle-to-record covers the use case |
+| Tone/style settings | **Skipped** | Deprioritized after core pipeline scope |
+| Export transcript | **Skipped** | Copy-to-clipboard covers primary need |
+| Packaging (.dmg) | **Skipped** | macOS Gatekeeper blocks unsigned Python binaries in app bundles; requires Apple Developer cert |
+| Live partial transcription | **Built** (not in original spec) | Raw text updates every 150ms during recording using Whisper tiny |
 
 ---
 
-## 📸 Screenshots (Optional)
+## Suggested Test Script (10 minutes)
 
-If you want to demo to evaluators, take screenshots of:
-1. App with empty state (first load)
-2. App with one transcript (raw + polished)
-3. App with history panel open
-4. App with vocabulary panel open
-5. Error recovery (e.g., sidecar down, then recovered)
+**Test 1 — English:**
+Record: *"The quick brown fox jumps over the lazy dog, um, you know"*
+Expected: Filler words (um, you know) removed, punctuation correct
 
----
+**Test 2 — Korean:**
+Record: *"안녕하세요 저는 음 개발자입니다 그래서 뭐 열심히 일하고 있어요"*
+Expected: Fillers (음, 그래서, 뭐) removed, Korean spacing correct
 
-## ⏱️ Time Breakdown
+**Test 3 — Code-switching (core feature):**
+Record: *"머신러닝에서 overfitting을 regularization으로 방지할 수 있어"*
+Expected: "overfitting" and "regularization" preserved exactly; Korean unchanged
 
-| Task | Time |
-|------|------|
-| Setup | 5 min |
-| Test all features | 5 min |
-| Full walkthrough | 3 min |
-| Screenshots | 5 min |
-| **Total** | **18 min** |
+**Test 4 — Custom vocabulary:**
+- Open vocab panel, add "overfitting"
+- Record the same phrase as Test 3
+- Expected: "overfitting" preserved exactly (vocabulary boost confirms the term)
 
----
+**Test 5 — History and edit:**
+- Open history panel — all 4 recordings should appear
+- Click Edit on any entry, modify the polished text, click Done
+- Restart the app — confirm history persists
 
-## What This Demo Shows Evaluators
-
-✅ **It works end-to-end** — Full flow from record → transcribe → polish → copy
-✅ **Korean + English handling** — Core product requirement works
-✅ **Vocabulary feature** — Custom terms preserved
-✅ **History & persistence** — Transcripts saved
-✅ **Low latency** — < 500ms to first token
-✅ **Good UX** — Clear status, responsive UI, keyboard shortcuts
-✅ **Error recovery** — Graceful fallbacks (if you test errors)
+**Test 6 — Keyboard shortcuts:**
+- Press **⌘R** to start/stop (instead of clicking)
+- Press **⌘C** (with nothing selected) to copy current transcript
 
 ---
 
-## Next: Run Full Validation
+## Architecture Overview
 
-If you want comprehensive validation testing, see:
-- `doc/log/validation_test.md` — 20-utterance test protocol
-- `doc/log/validation-results.md` — Results from Qwen2.5 testing
+```
+Electron (main.js)
+  ├── spawns Swift binary (src/swift-audio/recorder) for mic capture
+  ├── spawns Python sidecar (src/sidecar/server.py) for transcription + polish
+  ├── polls /health every 500ms; auto-restarts sidecar on failure
+  └── bridges IPC between renderer and sidecar via localhost HTTP
 
-This demo just shows it works. Full validation proves it works *well*.
+Python sidecar (Flask, port 5001)
+  ├── GET  /health         → { status: "ok" }
+  ├── POST /transcribe     → { raw, language, confidence }
+  └── POST /polish         → SSE stream of { token } + [DONE]
+```
+
+---
+
+## Known Limitations
+
+- **macOS only** — uses Swift AVAudioEngine and `afconvert` (macOS-only audio tools)
+- **Whisper model is large** — medium model is ~1.5 GB; download takes 5-10 min on first run
+- **Polish requires internet** — Claude API call requires network; raw transcript still available offline
+- **No packaged .app** — must run from source via `npx electron .` (see Stretch Goals section)
