@@ -38,6 +38,10 @@ let vocabMessageResetTimer = null;
 const defaultVocabPlaceholder = vocabInput.placeholder;
 let rawFinalizeTimer = null;
 
+function scrollCurrentTranscriptToBottom() {
+  currentTranscript.scrollTop = currentTranscript.scrollHeight;
+}
+
 function showVocabInputMessage(message, duration = 1500) {
   vocabInput.value = "";
   vocabInput.placeholder = message;
@@ -547,6 +551,8 @@ window.api.onPolishToken(({ token }) => {
 window.api.onPolishDone(({ text }) => {
   currentPolished = text;
   currentPolish.textContent = text;
+  // Ensure the latest polished text is visible.
+  requestAnimationFrame(scrollCurrentTranscriptToBottom);
 
   // Persist only after the full pipeline completes.
   if (currentRaw.textContent || text) {

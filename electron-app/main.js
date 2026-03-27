@@ -197,6 +197,8 @@ function startPartialTranscribeLoop(vocab) {
         path: snapshotWavPath,
         vocab,
         beam_size: 1,
+        model_size: "tiny",
+        is_partial: true,
       });
       if (partial?.raw && partial.raw !== latestPartialRaw) {
         latestPartialRaw = partial.raw;
@@ -208,7 +210,7 @@ function startPartialTranscribeLoop(vocab) {
       if (snapshotWavPath) fs.unlink(snapshotWavPath, () => {});
       partialTranscribeInFlight = false;
     }
-  }, 200);
+  }, 150);
 }
 
 function stopPartialTranscribeLoop() {

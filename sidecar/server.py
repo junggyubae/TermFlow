@@ -13,21 +13,24 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 app = Flask(__name__)
 
 # ---------------------------------------------------------------------------
-# Whisper model — loaded at startup to hide latency
+# Whisper models — loaded at startup to hide latency
 # ---------------------------------------------------------------------------
-whisper_model = None
+whisper_models = {}
 
 
 def load_whisper():
-    global whisper_model
+    global whisper_models
     from faster_whisper import WhisperModel
 
-    model_size = os.environ.get("WHISPER_MODEL", "large-v3")
-    print(f"Loading Whisper {model_size} (int8)...", flush=True)
-    start = time.time()
-    whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
-    elapsed = time.time() - start
-    print(f"Whisper loaded in {elapsed:.1f}s", flush=True)
+    final_model_size = os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
+    partial_model_size = os.environ.get("WHISPER_MODEL_PARTIAL", "tiny")
+
+    for model_size in {final_model_size, partial_model_size}:
+        print(f"Loading Whisper {model_size} (int8)...", flush=True)
+        start = time.time()
+        whisper_models[model_size] = WhisperModel(model_size, device="cpu", compute_type="int8")
+        elapsed = time.time() - start
+        print(f"Whisper {model_size} loaded in {elapsed:.1f}s", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +46,7 @@ def health():
 # ---------------------------------------------------------------------------
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
-    if whisper_model is None:
+    if not whisper_models:
         return jsonify({"error": "Whisper model not loaded"}), 503
 
     data = request.get_json(force=True)
@@ -56,10 +59,18 @@ def transcribe():
     # Vocabulary boost via initial_prompt — critical for Korean+English code-switching
     initial_prompt = ", ".join(vocab) if vocab else None
 
+    # Allow explicit model override per request.
+    model_size = data.get("model_size")
+    if not model_size:
+        model_size = "tiny" if data.get("is_partial") else os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
+    model = whisper_models.get(model_size)
+    if model is None:
+        return jsonify({"error": f"Requested model not loaded: {model_size}"}), 400
+
     # Use beam_size from request (1 for fast chunks, 5 for final)
     beam_size = data.get("beam_size", 5)
 
-    segments, info = whisper_model.transcribe(
+    segments, info = model.transcribe(
         wav_path,
         language=None,
         vad_filter=True,
