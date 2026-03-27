@@ -138,6 +138,7 @@ vocabToggle.addEventListener("click", () => {
   vocabToggle.textContent = isHidden
     ? "+ Show Custom Vocabulary"
     : "- Hide Custom Vocabulary";
+  btnDeleteAllVocab.classList.toggle("hidden");
   resizeWindow();
 });
 
@@ -197,6 +198,7 @@ historyToggle.addEventListener("click", () => {
   historyToggle.textContent = isHidden
     ? "+ Show History"
     : "- Hide History";
+  btnDeleteAllHistory.classList.toggle("hidden");
   resizeWindow();
 });
 
