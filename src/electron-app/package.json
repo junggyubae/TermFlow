@@ -1,7 +1,7 @@
 {
   "name": "termflow",
   "version": "0.1.0",
-  "description": "Korean-English bilingual voice dictation for macOS",
+  "description": "Korean-English bilingual dictation for macOS",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

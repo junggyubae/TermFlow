@@ -82,7 +82,7 @@ install_node() {
 get_api_key() {
   # Priority: env var > saved file > prompt
   if [ -z "$ANTHROPIC_API_KEY" ]; then
-    CONFIG_DIR="$HOME/.config/voice-dictation"
+    CONFIG_DIR="$HOME/.config/termflow"
     API_KEY_FILE="$CONFIG_DIR/api-key"
 
     # Check if saved API key exists

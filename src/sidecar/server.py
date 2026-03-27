@@ -1,5 +1,5 @@
 """
-Voice Dictation Sidecar — Flask server on localhost:5001
+TermFlow Sidecar — Flask server on localhost:5001
 Endpoints: /health, /transcribe, /polish
 """
 

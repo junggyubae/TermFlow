@@ -34,11 +34,11 @@ The launcher will:
 - Reuse your saved API key automatically
 - Launch the app directly
 
-**No re-entry needed.** Your API key is saved to `~/.config/voice-dictation/api-key` after first launch.
+**No re-entry needed.** Your API key is saved to `~/.config/termflow/api-key` after first launch.
 
 To use a different API key, either:
 - `export ANTHROPIC_API_KEY="sk-ant-..."` before running
-- Or delete `~/.config/voice-dictation/api-key` to be prompted again
+- Or delete `~/.config/termflow/api-key` to be prompted again
 
 ## What You Need
 
