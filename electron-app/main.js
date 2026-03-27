@@ -140,7 +140,7 @@ function postJSON(urlPath, body) {
   });
 }
 
-function streamPolish(text, vocab) {
+function streamPolish(text, vocab, finalRaw = null, language = null) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ text, vocab });
     const req = http.request(
@@ -167,7 +167,11 @@ function streamPolish(text, vocab) {
             if (line.startsWith("data: ")) {
               const payload = line.slice(6);
               if (payload === "[DONE]") {
-                send("polish-done", { text: fullText });
+                // Include final raw text if available
+                const result = { text: fullText };
+                if (finalRaw) result.raw = finalRaw;
+                if (language) result.language = language;
+                send("polish-done", result);
                 resolve(fullText);
               } else {
                 try {
@@ -203,10 +207,14 @@ function streamPolish(text, vocab) {
 // ---------------------------------------------------------------------------
 // Recording IPC
 // ---------------------------------------------------------------------------
+let streamingFilePath = null;
+let streamingInterval = null;
+
 ipcMain.on("start-recording", () => {
   if (recorderProcess) return;
 
   recorderStdout = "";
+  streamingFilePath = null;
   recorderProcess = spawn(RECORDER_PATH, [], { stdio: ["pipe", "pipe", "pipe"] });
 
   recorderProcess.stdout.on("data", (data) => {
@@ -216,6 +224,16 @@ ipcMain.on("start-recording", () => {
   recorderProcess.stderr.on("data", (data) => {
     const line = data.toString().trim();
     console.log("[Recorder]", line);
+
+    // Capture file path for streaming
+    if (line.startsWith("FILE_PATH:")) {
+      streamingFilePath = line.slice("FILE_PATH:".length);
+      console.log("[Main] Streaming file:", streamingFilePath);
+
+      // Start periodic streaming transcription
+      startStreamingTranscription();
+    }
+
     if (line.startsWith("RECORDING")) {
       send("recording-status", { status: "recording" });
     }
@@ -228,10 +246,41 @@ ipcMain.on("start-recording", () => {
   });
 });
 
+function startStreamingTranscription() {
+  // Get vocab once
+  mainWindow.webContents.executeJavaScript(
+    `(() => { try { return JSON.parse(localStorage.getItem("vd_vocab") || "{}").terms || []; } catch(e) { return []; } })()`
+  ).then((vocab) => {
+    // Poll every 500ms to transcribe partial audio
+    streamingInterval = setInterval(async () => {
+      if (!streamingFilePath || !fs.existsSync(streamingFilePath)) {
+        return;
+      }
+
+      try {
+        const result = await postJSON("/streaming-transcribe", { path: streamingFilePath, vocab });
+        if (result.raw) {
+          send("streaming-transcription", { raw: result.raw });
+        }
+      } catch (err) {
+        console.log("[Main] Streaming transcription (non-fatal):", err.message);
+      }
+    }, 500);
+  }).catch(() => {
+    console.log("[Main] Could not get vocab for streaming");
+  });
+}
+
 ipcMain.on("stop-recording", () => {
   if (!recorderProcess) {
     send("error", { code: "EMPTY_AUDIO", message: "No active recording" });
     return;
+  }
+
+  // Stop streaming
+  if (streamingInterval) {
+    clearInterval(streamingInterval);
+    streamingInterval = null;
   }
 
   recorderProcess.stdin.write("stop\n");
@@ -249,13 +298,14 @@ ipcMain.on("stop-recording", () => {
 
     try {
       // Read vocab from localStorage via renderer, fallback to empty
-      // TODO: Phase 4 Step 8 will add proper vocab UI
       const vocab = await new Promise((res) => {
         mainWindow.webContents.executeJavaScript(
           `(() => { try { return JSON.parse(localStorage.getItem("vd_vocab") || "{}").terms || []; } catch(e) { return []; } })()`
         ).then(res).catch(() => res([]));
       });
-      const result = await postJSON("/transcribe", { path: wavPath, vocab });
+
+      // Get FINAL transcription with full accuracy (beam_size=5)
+      const result = await postJSON("/transcribe", { path: wavPath, vocab, beam_size: 5 });
 
       // Delete audio immediately (privacy)
       fs.unlink(wavPath, () => {});
@@ -265,15 +315,15 @@ ipcMain.on("stop-recording", () => {
         return;
       }
 
-      send("transcription-result", {
-        raw: result.raw,
-        language: result.language,
-        confidence: result.confidence,
-      });
+      // DO NOT send transcription result to UI
+      // (final raw is fed directly to polish, never displayed)
+      // Store final raw and language for history saving
+      const finalRaw = result.raw;
+      const finalLanguage = result.language;
 
-      // Polish
+      // Polish using FINAL raw text
       send("recording-status", { status: "polishing" });
-      await streamPolish(result.raw, vocab);
+      await streamPolish(finalRaw, vocab, finalRaw, finalLanguage);
     } catch (err) {
       console.error("[Main] Pipeline error:", err.message);
       send("error", { code: "TRANSCRIBE_FAILED", message: err.message });

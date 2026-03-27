@@ -38,7 +38,42 @@ def health():
 
 
 # ---------------------------------------------------------------------------
-# /transcribe
+# /streaming-transcribe (partial, fast, for live feedback)
+# ---------------------------------------------------------------------------
+@app.route("/streaming-transcribe", methods=["POST"])
+def streaming_transcribe():
+    if whisper_model is None:
+        return jsonify({"error": "Whisper model not loaded"}), 503
+
+    data = request.get_json(force=True)
+    wav_path = data.get("path")
+    vocab = data.get("vocab", [])
+
+    if not wav_path or not os.path.exists(wav_path):
+        return jsonify({"error": f"File not found: {wav_path}"}), 400
+
+    initial_prompt = ", ".join(vocab) if vocab else None
+
+    # Fast transcription with beam_size=1 (faster, slightly less accurate)
+    segments, info = whisper_model.transcribe(
+        wav_path,
+        language=None,
+        vad_filter=False,  # VAD is slow for streaming
+        beam_size=1,  # Fast
+        initial_prompt=initial_prompt,
+    )
+
+    raw_text = " ".join(seg.text.strip() for seg in segments)
+
+    return jsonify({
+        "raw": raw_text,
+        "language": info.language,
+        "confidence": round(info.language_probability, 3),
+    })
+
+
+# ---------------------------------------------------------------------------
+# /transcribe (final, accurate, full context)
 # ---------------------------------------------------------------------------
 @app.route("/transcribe", methods=["POST"])
 def transcribe():

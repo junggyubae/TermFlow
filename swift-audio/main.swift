@@ -33,6 +33,9 @@ class Recorder {
 
         engine.prepare()
         try engine.start()
+
+        // Output the file path immediately for streaming
+        FileHandle.standardError.write("FILE_PATH:\(finalURL!.path)\n".data(using: .utf8)!)
         FileHandle.standardError.write("RECORDING\n".data(using: .utf8)!)
     }
 

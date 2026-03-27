@@ -468,11 +468,7 @@ function createCard() {
 // ---------------------------------------------------------------------------
 window.api.onRecordingStatus(({ status }) => {
   if (status === "recording") {
-    // Save previous transcript to history BEFORE clearing current area
-    if (currentRaw.textContent && currentRaw.textContent !== "Recording...") {
-      saveToHistory(currentRaw.textContent, currentPolish.textContent, "");
-    }
-
+    // Clear display for new recording (history is saved via onPolishDone)
     isRecording = true;
     isTranscriptInProgress = true;
     btnRecord.classList.add("recording");
@@ -501,12 +497,21 @@ window.api.onRecordingStatus(({ status }) => {
 });
 
 // ---------------------------------------------------------------------------
-// Transcription result
+// Streaming transcription (partial, live feedback while recording)
+// ---------------------------------------------------------------------------
+window.api.onStreamingTranscription(({ raw }) => {
+  // Display partial raw text while recording
+  if (isRecording) {
+    currentRaw.textContent = raw;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Transcription result (final, sent directly to polish - NOT displayed)
 // ---------------------------------------------------------------------------
 window.api.onTranscriptionResult(({ raw, language, confidence }) => {
-  // Update ONLY the current transcript display area (not history)
-  currentRaw.textContent = raw;
-
+  // Final raw is NOT displayed (sent directly to polish)
+  // Just prepare for polish
   currentPolished = "";
   currentPolish.innerHTML = '<span class="cursor"></span>';
 });
@@ -519,9 +524,14 @@ window.api.onPolishToken(({ token }) => {
   currentPolish.innerHTML = currentPolished + '<span class="cursor"></span>';
 });
 
-window.api.onPolishDone(({ text }) => {
+window.api.onPolishDone(({ text, raw, language }) => {
   currentPolished = text;
   currentPolish.textContent = text;
+
+  // Save to history if we have raw text
+  if (raw) {
+    saveToHistory(raw, text, language || "");
+  }
 
   isRecording = false;
   isTranscriptInProgress = false;
@@ -531,7 +541,6 @@ window.api.onPolishDone(({ text }) => {
   recordLabel.textContent = "Record";
   btnRecord.disabled = false;
   statusText.textContent = "Done — press Record or ⌘R";
-
 });
 
 // ---------------------------------------------------------------------------
