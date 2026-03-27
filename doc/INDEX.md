@@ -41,6 +41,11 @@ Complete guide to all planning and development documents.
 **Why:** Shows learning and iteration — evaluators value this
 **Status:** Not yet written (to do after Phase 1)
 
+### 8. **References: 8-references.md**
+**What:** External papers, blog posts, and open-source projects that informed decisions
+**Why:** Shows research grounding — decisions backed by prior work, not guesswork
+**Length:** 3 min read
+
 ---
 
 ## 📋 Development Logs
@@ -93,6 +98,7 @@ doc/
 ├── 5-stretch.md                   ← Optional features (P2)
 ├── 6-status.md                    ← Current status & checklist (NEW)
 ├── 7-reflection.md                ← (TODO) Learnings & postmortem
+├── 8-references.md                ← External papers, blog posts, OSS references
 │
 ├── log/                           ← Implementation logs (timestamped)
 │   ├── INDEX.md                   ← Navigation guide for logs
@@ -158,6 +164,7 @@ doc/
 | **6-status.md** | Realistic assessment | Self-awareness |
 | **pivot1/reason.md** | Data-driven decisions | Problem-solving |
 | **log/** | Iteration + learning | Transparency |
+| **8-references.md** | Research grounding | Intellectual rigor |
 
 ---
 
