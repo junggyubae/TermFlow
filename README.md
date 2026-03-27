@@ -21,7 +21,7 @@ This app is built for the way Korean engineers, researchers, and students actual
 
 ```bash
 git clone https://github.com/junggyubae/TermFlow
-cd cl_r1
+cd TermFlow
 chmod +x src/run/run.sh
 ./src/run/run.sh
 ```
@@ -42,7 +42,7 @@ One command sets up dependencies, saves your API key, and launches the app. See 
 | [doc/4-build.md](doc/4-build.md) | Step-by-step implementation guide |
 | [doc/5-stretch.md](doc/5-stretch.md) | Stretch goals — what was built, what was skipped |
 | [doc/6-reflection.md](doc/6-reflection.md) | What I learned building this |
-| [doc/pivot1/](doc/pivot1/) | Why we switched the polishing model from Qwen2.5 to Claude Haiku — validation results and test logs |
+| [doc/pivot1/](doc/pivot1/) | Why I switched the polishing model from Qwen2.5 to Claude Haiku — validation results and test logs |
 
 ---
 
