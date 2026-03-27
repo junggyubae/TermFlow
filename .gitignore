@@ -24,6 +24,9 @@ sidecar/venv/
 *.sublime-project
 *.sublime-workspace
 
+# Claude Code worktrees
+.claude/worktrees/
+
 # Logs
 *.log
 npm-debug.log*
