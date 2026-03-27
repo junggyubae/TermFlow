@@ -9,13 +9,15 @@ const os = require("os");
 // Paths
 // ---------------------------------------------------------------------------
 const IS_PACKAGED = app.isPackaged;
-const RESOURCES_PATH = IS_PACKAGED ? process.resourcesPath : path.resolve(__dirname, "..");
-const SIDECAR_DIR = path.join(RESOURCES_PATH, "sidecar");
+const RESOURCES_PATH = IS_PACKAGED ? process.resourcesPath : path.resolve(__dirname, "../..");
+const SIDECAR_DIR = IS_PACKAGED
+  ? path.join(RESOURCES_PATH, "sidecar")
+  : path.join(RESOURCES_PATH, "src", "sidecar");
 const SIDECAR_SCRIPT = path.join(SIDECAR_DIR, "server.py");
 const VENV_PYTHON = path.join(SIDECAR_DIR, "venv", "bin", "python3");
 const RECORDER_PATH = IS_PACKAGED
   ? path.join(process.resourcesPath, "recorder")
-  : path.join(RESOURCES_PATH, "swift-audio", "recorder");
+  : path.join(RESOURCES_PATH, "src", "swift-audio", "recorder");
 
 // ---------------------------------------------------------------------------
 // State

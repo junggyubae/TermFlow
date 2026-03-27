@@ -14,30 +14,30 @@
 ### 2. Build the App
 ```bash
 # Set up Python sidecar
-cd sidecar
+cd src/sidecar
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 deactivate
-cd ..
+cd ../..
 
 # Build the Electron app
-cd electron-app
+cd src/electron-app
 npm install
 npm run dist
-cd ..
+cd ../..
 ```
 
 ### 3. Run the App
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
 export WHISPER_MODEL=medium
-open electron-app/dist/mac-arm64/Voice\ Dictation.app
+open src/electron-app/dist/mac-arm64/Voice\ Dictation.app
 ```
 
 Or copy to Applications folder:
 ```bash
-cp -r electron-app/dist/mac-arm64/Voice\ Dictation.app /Applications/
+cp -r src/electron-app/dist/mac-arm64/Voice\ Dictation.app /Applications/
 open /Applications/Voice\ Dictation.app
 ```
 
@@ -53,13 +53,13 @@ If you want to run from source instead of the packaged app:
 
 ### 1. Install Node Dependencies
 ```bash
-cd electron-app
+cd src/electron-app
 npm install
 ```
 
 ### 2. Install Python Sidecar Dependencies
 ```bash
-cd sidecar
+cd src/sidecar
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -67,7 +67,7 @@ pip install -r requirements.txt
 
 ### 3. Run in Development Mode
 ```bash
-cd electron-app
+cd src/electron-app
 
 # Set environment variables
 export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
@@ -79,7 +79,7 @@ npx electron .
 
 ### 4. Build New Package (if modified)
 ```bash
-cd electron-app
+cd src/electron-app
 npm run dist
 ```
 
@@ -120,7 +120,7 @@ Grant microphone access in System Preferences > Security & Privacy > Microphone
 
 ## Architecture
 
-- **electron-app/** - Desktop UI (Electron)
-- **sidecar/** - Backend server (Flask + Whisper + Claude API)
-- **swift-audio/** - macOS audio recorder (Swift)
+- **src/electron-app/** - Desktop UI (Electron)
+- **src/sidecar/** - Backend server (Flask + Whisper + Claude API)
+- **src/swift-audio/** - macOS audio recorder (Swift)
 - **doc/** - Documentation and validation logs
