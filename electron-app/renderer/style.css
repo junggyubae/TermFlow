@@ -261,6 +261,14 @@ main {
   color: #ccc;
 }
 
+.vocab-delete {
+  color: #ef4444;
+}
+
+.vocab-delete:hover {
+  color: #f87171;
+}
+
 /* History section */
 .history-section {
   width: 100%;

@@ -50,7 +50,14 @@ function syncHistoryEmptyState() {
   const hasCards = history.querySelector(".transcript-card");
   const existingEmpty = history.querySelector(".history-empty");
 
-  if (!hasCards && !existingEmpty) {
+  // Check if there's data in localStorage (for initial load)
+  let hasStoredHistory = false;
+  try {
+    const stored = JSON.parse(localStorage.getItem("vd_history") || "[]");
+    hasStoredHistory = stored.length > 0;
+  } catch (e) {}
+
+  if (!hasCards && !hasStoredHistory && !existingEmpty) {
     const empty = document.createElement("div");
     empty.className = "history-empty";
     empty.textContent = "No history yet";
@@ -58,7 +65,7 @@ function syncHistoryEmptyState() {
     empty.style.fontSize = "12px";
     empty.style.padding = "8px";
     history.appendChild(empty);
-  } else if (hasCards && existingEmpty) {
+  } else if ((hasCards || hasStoredHistory) && existingEmpty) {
     existingEmpty.remove();
   }
 }
@@ -519,6 +526,108 @@ function updateHistoryEntry(card, newPolished) {
   }
 }
 
+// Load history from localStorage on app startup
+function loadHistoryFromStorage() {
+  const key = "vd_history";
+  let hist = [];
+  try {
+    hist = JSON.parse(localStorage.getItem(key) || "[]");
+  } catch (e) {}
+
+  // Render each stored history entry as a card
+  hist.forEach(entry => {
+    const card = document.createElement("div");
+    card.className = "transcript-card";
+
+    const timestamp = new Date(entry.timestamp);
+    const dateStr = timestamp.toLocaleDateString([], { month: "2-digit", day: "2-digit" });
+    const timeStr = timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const fullTimeStr = `${dateStr} ${timeStr}`;
+
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="badge badge-hidden" data-lang>${entry.language || ""}</span>
+        <span class="card-time">${fullTimeStr}</span>
+        <button class="btn-delete-card">Delete</button>
+      </div>
+      <div class="transcript-section">
+        <div class="transcript-header">
+          <span>Raw</span>
+          <button class="btn-copy" data-copy-raw>Copy</button>
+        </div>
+        <div class="transcript-text raw" data-raw>${entry.raw}</div>
+      </div>
+      <hr class="section-divider" />
+      <div class="transcript-section">
+        <div class="transcript-header">
+          <span>Polished</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-copy" data-edit-polish>Edit</button>
+            <button class="btn-copy" data-copy-polish>Copy</button>
+          </div>
+        </div>
+        <div class="transcript-text" data-polish>${entry.polished}</div>
+      </div>
+    `;
+
+    // Append to history panel
+    history.appendChild(card);
+
+    // Set up event listeners
+    const rawEl = card.querySelector("[data-raw]");
+    const rawBtn = card.querySelector("[data-copy-raw]");
+    rawBtn.addEventListener("click", () => {
+      const text = rawEl.textContent;
+      if (text) {
+        window.api.copyToClipboard(text);
+        rawBtn.textContent = "Copied!";
+        setTimeout(() => (rawBtn.textContent = "Copy"), 1500);
+      }
+    });
+
+    const polishEl = card.querySelector("[data-polish]");
+    const polishBtn = card.querySelector("[data-copy-polish]");
+    polishBtn.addEventListener("click", () => {
+      const text = polishEl.textContent;
+      if (text) {
+        window.api.copyToClipboard(text);
+        polishBtn.textContent = "Copied!";
+        setTimeout(() => (polishBtn.textContent = "Copy"), 1500);
+      }
+    });
+
+    const editBtn = card.querySelector("[data-edit-polish]");
+    editBtn.addEventListener("click", () => {
+      if (polishEl.contentEditable === "true") {
+        polishEl.contentEditable = "false";
+        editBtn.textContent = "Edit";
+        updateHistoryEntry(card, polishEl.textContent);
+      } else {
+        polishEl.contentEditable = "true";
+        editBtn.textContent = "Done";
+        polishEl.focus();
+      }
+    });
+
+    const deleteBtn = card.querySelector(".btn-delete-card");
+    deleteBtn.addEventListener("click", () => {
+      card.remove();
+      syncHistoryEmptyState();
+
+      // Remove from localStorage
+      const key = "vd_history";
+      let hist = [];
+      try {
+        hist = JSON.parse(localStorage.getItem(key) || "[]");
+      } catch (e) {}
+      hist = hist.filter(h => h.raw !== rawEl.textContent);
+      localStorage.setItem(key, JSON.stringify(hist));
+    });
+  });
+}
+
 // Initialize history empty state
 syncHistoryEmptyState();
+// Load history from localStorage
+loadHistoryFromStorage();
 V
