@@ -14,8 +14,8 @@ const SIDECAR_DIR = IS_PACKAGED
   ? path.join(RESOURCES_PATH, "sidecar")
   : path.join(RESOURCES_PATH, "src", "sidecar");
 const SIDECAR_SCRIPT = path.join(SIDECAR_DIR, "server.py");
-// Venv lives in userData (outside app bundle) so macOS doesn't block it
-const VENV_DIR = path.join(app.getPath("userData"), "sidecar-venv");
+// Venv: use VENV_OVERRIDE (set by Homebrew launcher) or userData dir
+const VENV_DIR = process.env.VENV_OVERRIDE || path.join(app.getPath("userData"), "sidecar-venv");
 const VENV_PYTHON = path.join(VENV_DIR, "bin", "python3");
 const REQUIREMENTS = path.join(SIDECAR_DIR, "requirements.txt");
 const RECORDER_PATH = IS_PACKAGED
