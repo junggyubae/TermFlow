@@ -8,10 +8,14 @@ const os = require("os");
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
-const PROJECT_ROOT = path.resolve(__dirname, "..");
-const RECORDER_PATH = path.join(PROJECT_ROOT, "swift-audio", "recorder");
-const SIDECAR_SCRIPT = path.join(PROJECT_ROOT, "sidecar", "server.py");
-const VENV_PYTHON = path.join(PROJECT_ROOT, "venv", "bin", "python3");
+const IS_PACKAGED = app.isPackaged;
+const RESOURCES_PATH = IS_PACKAGED ? process.resourcesPath : path.resolve(__dirname, "..");
+const SIDECAR_DIR = path.join(RESOURCES_PATH, "sidecar");
+const SIDECAR_SCRIPT = path.join(SIDECAR_DIR, "server.py");
+const VENV_PYTHON = path.join(SIDECAR_DIR, "venv", "bin", "python3");
+const RECORDER_PATH = IS_PACKAGED
+  ? path.join(process.resourcesPath, "recorder")
+  : path.join(RESOURCES_PATH, "swift-audio", "recorder");
 
 // ---------------------------------------------------------------------------
 // State
