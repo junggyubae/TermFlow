@@ -24,7 +24,7 @@ def load_whisper():
     from faster_whisper import WhisperModel
 
     final_model_size = os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
-    partial_model_size = os.environ.get("WHISPER_MODEL_PARTIAL", "base")
+    partial_model_size = os.environ.get("WHISPER_MODEL_PARTIAL", "tiny")
 
     for model_size in {final_model_size, partial_model_size}:
         print(f"Loading Whisper {model_size} (int8)...", flush=True)
@@ -64,7 +64,7 @@ def transcribe():
     # Allow explicit model override per request.
     model_size = data.get("model_size")
     if not model_size:
-        model_size = "base" if data.get("is_partial") else os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
+        model_size = "tiny" if data.get("is_partial") else os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
     model = whisper_models.get(model_size)
     if model is None:
         return jsonify({"error": f"Requested model not loaded: {model_size}"}), 400
