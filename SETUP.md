@@ -11,8 +11,8 @@
 The fastest way to get running:
 
 ```bash
-git clone https://github.com/junggyubae/cl_r1
-cd cl_r1
+git clone https://github.com/junggyubae/TermFlow
+cd TermFlow
 chmod +x src/run/run.sh
 ./src/run/run.sh
 ```
@@ -82,8 +82,8 @@ To distribute as a standalone `.app`:
 ```bash
 cd src/electron-app
 npm run dist
-cp -r dist/mac-arm64/Voice\ Dictation.app /Applications/
-open /Applications/Voice\ Dictation.app
+cp -r dist/mac-arm64/TermFlow.app /Applications/
+open /Applications/TermFlow.app
 ```
 
 **Whisper Model Options:**

@@ -6,8 +6,8 @@ One-command setup and launch for macOS.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/junggyubae/cl_r1
-cd cl_r1
+git clone https://github.com/junggyubae/TermFlow
+cd TermFlow
 
 # 2. Run the launcher
 chmod +x src/run/run.sh
