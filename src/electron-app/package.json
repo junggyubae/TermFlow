@@ -1,7 +1,7 @@
 {
-  "name": "voice-dictation",
+  "name": "termflow",
   "version": "0.1.0",
-  "description": "Bilingual voice dictation for macOS",
+  "description": "Korean-English bilingual voice dictation for macOS",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -15,8 +15,8 @@
     "keytar": "^7.9.0"
   },
   "build": {
-    "appId": "com.voicedictation.app",
-    "productName": "Voice Dictation",
+    "appId": "com.termflow.app",
+    "productName": "TermFlow",
     "mac": {
       "target": ["dmg", "zip"],
       "sign": null
