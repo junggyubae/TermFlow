@@ -33,6 +33,6 @@ Build these only after P0 and P1 are complete and working. Do not sacrifice core
 
 ## Notes on Skipped Items
 
-**Packaging** was the most-attempted skip. The attempt revealed that macOS code signing is a hard requirement for distributing apps with embedded binaries — not just a nice-to-have. The app uses a Python interpreter (unsigned) inside the bundle, which macOS Gatekeeper blocks regardless of entitlements. A proper solution would require an Apple Developer Program membership ($99/year) for signing and notarization. The dev-mode run (`npx electron .`) is fully functional and was used for all testing.
+**Packaging** was the most-attempted skip. First tried electron-builder to produce a `.app` bundle — macOS Gatekeeper blocked the unsigned Python interpreter inside the bundle regardless of entitlements. Then tried Homebrew (creating a custom tap at `junggyubae/homebrew-tap`) — ran into GitHub tarball checksum instability where the sha256 kept changing between Homebrew's verification steps, making the formula unreliable. Both approaches require either an Apple Developer certificate ($99/year) or a stable versioned release artifact. The dev-mode run (`npx electron .`) is fully functional and was used for all testing.
 
 **Global hotkey** was deprioritized because ⌘R works well when the app is focused, and the app is small enough to leave visible. A future version could use `globalShortcut` in Electron's main process with a few lines of code.
