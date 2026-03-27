@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Dictation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="titlebar">Voice Dictation</div>
+
+  <main>
+    <!-- Top section: Record button + current transcript -->
+    <div class="top-section">
+      <div class="record-section">
+        <button id="btn-record" class="record-btn" disabled>
+          <span id="record-icon">●</span>
+          <span id="record-label">Record</span>
+        </button>
+        <p id="status-text" class="status-text">Loading</p>
+      </div>
+      <div id="current-transcript" class="current-transcript">
+        <div class="transcript-section">
+          <div class="transcript-header">
+            <span>Raw</span>
+            <button class="btn-copy" id="btn-copy-current-raw">Copy</button>
+          </div>
+          <div class="transcript-text raw" id="current-raw"></div>
+        </div>
+        <hr class="section-divider" />
+        <div class="transcript-section">
+          <div class="transcript-header">
+            <span>Polished</span>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-copy" id="btn-edit-current-polish">Edit</button>
+              <button class="btn-copy" id="btn-copy-current-polish">Copy</button>
+            </div>
+          </div>
+          <div class="transcript-text" id="current-polish"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vocab management -->
+    <div class="vocab-section">
+      <button id="vocab-toggle" class="vocab-toggle"></button>
+      <div id="vocab-panel" class="vocab-panel hidden">
+        <div class="vocab-input-row">
+          <input id="vocab-input" type="text" placeholder="Type term and press Enter to add" spellcheck="false" />
+        </div>
+        <div id="vocab-list" class="vocab-list"></div>
+      </div>
+    </div>
+
+    <!-- History management -->
+    <div class="history-section">
+      <button id="history-toggle" class="history-toggle"></button>
+      <div id="history-panel" class="history-panel hidden">
+        <div id="history" class="history"></div>
+      </div>
+    </div>
+
+    <div id="error-banner" class="error-banner hidden">
+      <span id="error-message"></span>
+      <button id="btn-dismiss-error" class="btn-dismiss">✕</button>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

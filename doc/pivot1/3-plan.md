@@ -10,12 +10,14 @@ This document translates the decisions in `2-decision.md` into a concrete archit
 
 Before Phase 1, verify the tech stack works:
 
-1. **Anthropic API key** — Obtain from console.anthropic.com. Verify with a test call to Claude Haiku.
+1. **Ollama + Qwen2.5 load** — Run `ollama pull qwen2.5:7b` and `ollama serve`. Verify model loads without errors.
 2. **Whisper quality** — Install `pip install faster-whisper`, transcribe a test utterance (Korean + English), verify accuracy on code-switching.
-3. **Swift compilation** — Test compile `swift --version` and attempt a simple HelloWorld.swift to verify toolchain works.
-4. **keytar** — Verify `npm install keytar` works for macOS Keychain access.
+3. **VRAM availability** — Check Activity Monitor: confirm >4 GB available when both models are loaded.
+4. **Swift compilation** — Test compile `swift --version` and attempt a simple HelloWorld.swift to verify toolchain works.
 
 **Time allocation:** 1–2 hours. **Outcome:** Confidence that all dependencies are accessible. If any step fails, address before proceeding.
+
+---
 
 ---
 
@@ -41,7 +43,7 @@ One line per layer — the full rationale for each choice is in `2-decision.md`.
 | UI | Electron |
 | Audio Capture | AVAudioEngine (Swift native binary) |
 | Transcription | faster-whisper large-v3 (local Python sidecar) |
-| LLM Polish | Claude Haiku via Anthropic API, streamed |
+| LLM Polish | Qwen2.5 7B via Ollama (local), streamed |
 
 ---
 
@@ -93,7 +95,7 @@ How the four components talk to each other at runtime.
                     (AVAudioEngine)           (Flask server)
                     /tmp/vd_recording.wav     /health
                                              /transcribe (faster-whisper)
-                                             /polish (Claude Haiku API → SSE)
+                                             /polish (Ollama/Qwen2.5 → SSE)
 ```
 
 ### Recording Flow
@@ -139,7 +141,7 @@ Raw transcript ready
 [Main] POST /polish with { text, vocab }
    |
    v
-[Sidecar] Claude Haiku via Anthropic API
+[Sidecar] Qwen2.5 7B via Ollama
           Stream response as SSE tokens
    |
    v
@@ -204,7 +206,7 @@ All communication between the renderer and the main process goes through named c
 
 | Channel | Direction | Payload |
 |---|---|---|
-| `start-recording` | renderer → main | `{ vocab: string[] }` |
+| `start-recording` | renderer → main | — |
 | `stop-recording` | renderer → main | — |
 | `transcription-raw` | main → renderer | `{ text, language }` |
 | `polish-token` | main → renderer | `{ token }` |
@@ -212,8 +214,6 @@ All communication between the renderer and the main process goes through named c
 | `error` | main → renderer | `{ code, message }` |
 | `sidecar-status` | main → renderer | `{ status: "starting" \| "ready" \| "error" }` |
 | `model-download-progress` | main → renderer | `{ percent }` |
-| `save-api-key` | renderer → main | `{ key: string }` |
-| `get-api-key` | renderer → main → renderer | Returns `{ key: string \| null }` |
 
 ---
 
@@ -243,7 +243,7 @@ What gets persisted to `localStorage` and what each field means.
 | `language` | `"en"` \| `"ko"` \| `"mixed"` | from Whisper `info.language`; set to `"mixed"` if confidence < 0.85 |
 | `duration` | number | seconds of audio captured |
 | `raw` | string | Whisper output before polish |
-| `polished` | string | Final polished output from Claude Haiku |
+| `polished` | string | Final polished output from Qwen2.5 |
 
 Max 100 entries; oldest dropped on overflow. Total localStorage budget: ~2 MB.
 
@@ -259,9 +259,10 @@ Plain string array. Max 100 terms. No per-term metadata.
 
 | Setting | Storage | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | macOS Keychain via `keytar` | Required for Claude Haiku polish. Never stored in localStorage or files. |
 | `vd_vocab` | localStorage | Vocab terms array |
 | `vd_onboarded` | localStorage | Boolean — hides setup modal after first run |
+
+> **Note:** No API key is required. The entire pipeline (Whisper + Qwen2.5 via Ollama) runs locally. If the polish layer is swapped to Claude Haiku, an `ANTHROPIC_API_KEY` stored in the macOS Keychain via `keytar` would be added here.
 
 ---
 
@@ -289,10 +290,8 @@ Every failure has a specific code and a specific recovery path. Generic error me
 | Sidecar not responding | Python process crashed | Auto-restart once; "Restart app if this persists" |
 | Model not downloaded | First transcription | Progress bar: "Downloading Whisper model (1.5 GB)…" |
 | Empty audio | Nothing captured | "Nothing was captured — try again" |
-| API key missing | No key in Keychain | "Enter your Anthropic API key in Settings to enable polish" |
-| API key invalid | 401 from Claude API | "Invalid API key — check Settings" |
-| Network unavailable | No internet connection | Show raw transcript + "Polish requires internet — showing raw transcript only." |
-| Polish failed | Claude API error or stream interrupted | Show raw transcript + "Polish unavailable" notice |
+| Ollama not running | Port 11434 unreachable | "Ollama is not running. Start it with `ollama serve`" |
+| Polish failed | Qwen2.5 error or stream interrupted | Show raw transcript + "Polish unavailable" notice |
 
 ---
 
@@ -301,7 +300,7 @@ Every failure has a specific code and a specific recovery path. Generic error me
 The build is split into five phases. The first three phases deliver a complete end-to-end demo. Phases 4 and 5 layer on the remaining features.
 
 ### Phase 1 — Sidecar
-Local Python server: `/health`, `/transcribe` (Whisper), `/polish` (Claude Haiku SSE).
+Local Python server: `/health`, `/transcribe` (Whisper), `/polish` (Qwen2.5 SSE).
 
 ### Phase 2 — Audio Binary
 Swift CLI using AVAudioEngine. Writes `.wav`, controlled via stdin, universal binary.
@@ -328,8 +327,7 @@ Each phase must pass all criteria before moving to the next.
 - ✓ `/health` returns 200 OK
 - ✓ `/transcribe` successfully processes a test `.wav` file and returns `{ raw, language, confidence }`
 - ✓ `/polish` streams tokens (SSE) and completes with `[DONE]`
-- ✓ Claude Haiku code-switching test: 10/10 utterances preserve English terms (e.g., "MOSFET" not translated)
-- ✓ API key stored/retrieved from Keychain successfully
+- ✓ Qwen2.5 code-switching test: 8/10 utterances preserve English terms (e.g., "MOSFET" not translated)
 
 ### Phase 2 — Audio Binary
 - ✓ Swift binary compiles without errors
@@ -343,7 +341,7 @@ Each phase must pass all criteria before moving to the next.
 - ✓ Stop button triggers `stop-recording`, waits for transcription, displays raw text
 - ✓ Raw text feeds to `/polish`, polish tokens stream to textarea
 - ✓ Full loop: speak → transcribe → polish, no hangs, completes in <3 seconds
-- ✓ All 8 error codes trigger and display correct messages (MIC_DENIED, SIDECAR_DOWN, API_KEY_MISSING, API_KEY_INVALID, NETWORK_ERROR, EMPTY_AUDIO, TRANSCRIBE_FAILED, POLISH_FAILED)
+- ✓ All 5 error codes trigger and display correct messages
 - ✓ Processes cleaned up on app quit (no orphans)
 
 ### Phase 4 — P1 Features

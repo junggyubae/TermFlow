@@ -11,10 +11,10 @@ Step-by-step implementation grouped by the phases in `3-plan.md`. Each phase is 
 **Before starting Phase 1, complete these setup steps:**
 
 - [ ] Read all of `doc/1-product.md`, `doc/2-decision.md`, `doc/3-plan.md` (prerequisites + acceptance criteria)
-- [ ] Obtain Anthropic API key from console.anthropic.com
-- [ ] Test Claude Haiku: `curl -X POST https://api.anthropic.com/v1/messages -H "x-api-key: $KEY" -H "anthropic-version: 2023-06-01" -H "content-type: application/json" -d '{"model":"claude-haiku-4-5-20251001","max_tokens":50,"messages":[{"role":"user","content":"Say hello"}]}'`
-- [ ] Install Whisper: `pip install faster-whisper` and verify it loads without OOM
-- [ ] Install keytar: `npm install keytar` (for macOS Keychain API key storage)
+- [ ] Verify Ollama installed: `which ollama` and `ollama serve` runs without error
+- [ ] Download Qwen2.5: `ollama pull qwen2.5:7b` (takes 5–10 min on first run)
+- [ ] Download Whisper: `pip install faster-whisper` then test: `echo "test audio" > /tmp/test.wav` and verify Whisper loads without OOM
+- [ ] Check VRAM: Open Activity Monitor, verify >4 GB available
 - [ ] Verify Swift toolchain: `swift --version` returns ≥5.5
 - [ ] Create git repo: `git init` in project root, first commit of this doc set
 - [ ] Test cURL: `curl --version` (used for testing endpoints)
@@ -28,8 +28,8 @@ Step-by-step implementation grouped by the phases in `3-plan.md`. Each phase is 
 **Phase 1: Sidecar**
 - Build endpoints incrementally: `/health` first, then `/transcribe`, then `/polish`
 - Test each endpoint with `curl` before moving to the next
-- **Claude Haiku code-switching validation:** After `/polish` works, test on 10 real utterances. Expect 10/10 English term preservation.
-- **Accept Phase 1 when:** All three endpoints work, Claude Haiku handles Korean/English code-switching correctly, API key stored/retrieved via Keychain
+- **Qwen2.5 code-switching validation:** After `/polish` works, test on 10 real utterances. If >2 failures, document and proceed; plan fallback to Claude Haiku
+- **Accept Phase 1 when:** All three endpoints work, and Qwen2.5 test results are logged
 
 **Phase 2: Swift Binary**
 - Test `swiftc` and AVAudioEngine separately from Electron
@@ -56,7 +56,7 @@ Step-by-step implementation grouped by the phases in `3-plan.md`. Each phase is 
 
 # Phase 1 — Sidecar
 
-Build the Python HTTP server that runs Whisper and calls the Claude Haiku API. This phase is complete when you can call `/health`, `/transcribe`, and `/polish` endpoints locally.
+Build the Python HTTP server that runs Whisper and Ollama. This phase is complete when you can call `/health`, `/transcribe`, and `/polish` endpoints locally.
 
 ## Step 1 — Project Scaffold
 
@@ -73,7 +73,6 @@ touch server.py requirements.txt
 ```
 faster-whisper
 flask
-anthropic
 ```
 
 ---
@@ -82,7 +81,7 @@ anthropic
 
 **File:** `sidecar/server.py`
 
-- Flask server on `localhost:5001` — **must run with `threaded=True`** to prevent health polls from blocking during polish streaming: `app.run(threaded=True, port=5001)`
+- Flask server on `localhost:5001`
 - Load `WhisperModel("large-v3", device="cpu", compute_type="int8")` **at startup** (not on first request) — hides model loading latency behind sidecar boot time. If model not yet downloaded, first startup will be slow (~1-2 min) but subsequent starts are fast (~5s).
 - `GET /health` → `{ "status": "ok" }`
 - `POST /transcribe`
@@ -124,7 +123,7 @@ anthropic
   - Preserve vocabulary terms exactly as written: {vocab_terms}
   - The output should read like something the user would have typed themselves
   ```
-  **Why this is explicit:** Validation testing of a local model revealed these exact failure modes (Chinese contamination, term translation, answering instead of cleaning). Claude Haiku follows these instructions reliably, but keeping them explicit ensures consistent behavior.
+  **Why this is explicit:** Qwen2.5 will answer questions or translate to Chinese if not constrained. Every rule above addresses a real failure mode observed in testing.
 
 **Examples: What "Correct" Polish Output Looks Like**
 
@@ -147,14 +146,13 @@ These are realistic dictation transcripts (with fillers, false starts, trailing 
 - ✓ Output is NEVER translated — same language mix as input
 - ✓ Output is NEVER an answer to a question — just cleaned text
 
-- Model: Claude Haiku (`claude-haiku-4-5-20251001`) via Anthropic API
-- API key: Read from environment variable `ANTHROPIC_API_KEY` (set by Electron main process, retrieved from macOS Keychain via `keytar`)
-- Call: `anthropic.messages.stream(model="claude-haiku-4-5-20251001", system=system_prompt, messages=[{"role":"user","content":text}], max_tokens=2048)`
+- Model: Qwen2.5 7B via Ollama (`localhost:11434`)
+- Call Ollama's OpenAI-compatible endpoint: `POST /api/chat`, `stream=True`
 - Each streamed token emitted as `data: {"token": "..."}\n\n`
 - Final `data: [DONE]\n\n`
-- **If API unavailable:** Show raw transcript + "Polish unavailable" notice. No offline fallback — Claude Haiku is the only polish path.
+- **Fallback note:** if switching to Claude Haiku, replace the Ollama call with `anthropic.messages.stream(model="claude-haiku-4-5", ...)` — system prompt and SSE interface stay the same
 
-**Prerequisites:** Anthropic API key (from console.anthropic.com), `pip install anthropic`
+**Prerequisites:** `ollama pull qwen2.5:7b` (run once, ~4GB download)
 
 **Test:** `curl -N -X POST localhost:5001/polish -d '{"text":"그래서 음 MOSFET이 그러니까 saturation region에서 동작할 때는은..."}'`
 
@@ -198,9 +196,8 @@ Wire Electron's main process and renderer together. The sidecar and Swift binary
 
 **On `app.ready`:**
 - Spawn sidecar: `python sidecar/server.py`
-- Poll `GET /health` every 2s; emit `sidecar-status: ready` to renderer when up
+- Poll `GET /health` every 2s; emit `sidecar-status: ready` to renderer when up (500ms was too aggressive — 2s is sufficient for a local single-user app)
 - Parse stdout lines matching `PROGRESS:n` → emit `model-download-progress: { percent: n }`
-- Read `ANTHROPIC_API_KEY` from macOS Keychain via `keytar` and set as env var for sidecar process
 
 **On `start-recording` IPC:**
 - Spawn Swift binary: `./recorder`
@@ -318,14 +315,13 @@ User presses key
 
 **First launch** (`vd_onboarded` not set in localStorage):
 - Show setup modal before main UI
-- Instructions (three parts):
-  1. **API key setup**: "Enter your Anthropic API key to enable text polishing." Input field + "Save" button. Key stored in macOS Keychain via `keytar`. Uses `save-api-key` IPC channel.
-  2. **Tech setup**: "Whisper model (1.5 GB) will download on first transcription."
-  3. **Privacy disclosure**: "Audio is transcribed locally on your machine and never leaves it. Text transcripts are sent to Anthropic's Claude API for polishing."
-- Button: "I understand, let's go" (disabled until API key is saved and validated)
+- Instructions (two parts):
+  1. **Tech setup**: "Whisper model (1.5 GB) will download on first transcription. Ollama must be running (`ollama serve`)."
+  2. **Privacy disclosure**: "This app is fully local — all audio and transcripts stay on your machine. If the transcript quality is poor, you can optionally enable Claude Haiku (cloud-based) as a fallback polish layer. This will require an Anthropic API key and will send transcripts to Anthropic's servers for processing. You control this via Settings."
+- Button: "I understand, let's go"
 - On click: `vd_onboarded = true` → dismiss modal → show main UI
 
-> **Note:** API key is required. Without it, transcription still works but polish is unavailable (raw Whisper output only).
+> **Note:** No API key is required for primary use. The entire pipeline runs locally (Whisper + Qwen2.5 via Ollama). Privacy disclosure explains that fallback to Claude Haiku would shift transcripts to cloud.
 
 **First transcription** (model not downloaded yet):
 - Main process spawns sidecar: `python sidecar/server.py`
@@ -343,9 +339,7 @@ Implement recovery for every `error` code emitted by main process. See the error
 |---|---|
 | `MIC_DENIED` | Banner: "Microphone access denied" + button → `shell.openExternal('x-apple.systempreferences:...')` |
 | `SIDECAR_DOWN` | Auto-restart sidecar once; if second failure → "Restart app if this persists" |
-| `API_KEY_MISSING` | Banner: "Enter your Anthropic API key in Settings to enable polish" + button → open Settings |
-| `API_KEY_INVALID` | Banner: "Invalid API key — check Settings" + button → open Settings |
-| `NETWORK_ERROR` | Show raw transcript + "Polish requires internet — showing raw transcript only." |
+| `OLLAMA_DOWN` | Banner: "Ollama is not running. Start it with `ollama serve` in a terminal." — Detect by checking if Ollama port (11434) is reachable before calling `/polish`. Distinct from POLISH_FAILED. |
 | `EMPTY_AUDIO` | Toast: "Nothing was captured — try again" |
 | `TRANSCRIBE_FAILED` | Toast: "Transcription failed — try again" |
 | `POLISH_FAILED` | Show raw transcript + notice: "Polish unavailable" |

@@ -49,7 +49,7 @@ Korean-English bilingual in an academic or professional setting — engineers, r
 - Transcript history (past sessions accessible, each copyable)
 - Custom vocabulary (user-defined terms preserved exactly)
 - Thoughtful handling of mid-sentence language switching
-- Privacy-conscious architecture (audio transcribed locally; text polished via Claude API with transparent disclosure)
+- Privacy-conscious architecture (all audio and transcription processed locally)
 - Onboarding flow (model download progress, first-use instructions)
 - Empty-state UX (clear prompt for first-time users)
 

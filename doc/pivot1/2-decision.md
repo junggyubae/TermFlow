@@ -10,13 +10,16 @@ Each section covers one architectural choice: what the options were, how they co
 
 **User constraints:**
 - macOS-only (uses AVAudioEngine, which is macOS-native)
-- Requires Anthropic API key for LLM polish (Claude Haiku)
-- Whisper transcription runs fully local (~1.5 GB model download)
+- Requires Ollama pre-installed with models downloaded (~1.5 GB Whisper + 4 GB Qwen2.5)
+- Assumes machine has ~2–4 GB free VRAM for concurrent model loading
 
 **Timeline & scope:**
 - 36-hour take-home project
 - Solo developer
 - P0 + P1 features required; P2 is stretch
+
+**Key unknowns:**
+- **Qwen2.5 code-switching quality** — Document assumes Qwen2.5 handles English terms in Korean sentences correctly, but this needs empirical testing before Phase 1 completes. If it fails (>2 errors on test set), fallback to Claude Haiku is documented.
 
 ---
 
@@ -84,19 +87,19 @@ Whisper can either be told which language to expect, or left to detect it automa
 
 The polish layer takes raw Whisper output and turns it into clean, readable text — fixing punctuation, removing fillers, correcting Korean spacing, and preserving code-switching.
 
-| | Claude Haiku (API) |
-|---|---|
-| Korean + English quality | ✅ Best-in-class bilingual quality |
-| Code-switching preservation | ✅ Very reliable — preserves English terms in Korean sentences |
-| Privacy | ⚠️ Text sent to Anthropic servers (audio stays local) |
-| Cost | ⚠️ ~$0.001 per transcript (~negligible) |
-| Offline support | ❌ Requires network on every request |
-| Latency | ✅ ~300ms to first token |
-| Setup | ✅ API key only |
+| | Qwen2.5 7B via Ollama (local) | Claude Haiku (API) |
+|---|---|---|
+| Korean + English quality | ✅ Strong multilingual, good code-switching | ✅ Best-in-class bilingual quality |
+| Code-switching preservation | ⚠️ Generally reliable, needs testing | ✅ Very reliable |
+| Privacy | ✅ Fully local — no text leaves machine | ❌ Text sent to Anthropic servers |
+| Cost | ✅ Free | ⚠️ ~$0.001 per transcript |
+| Offline support | ✅ Works with no internet | ❌ Requires network on every request |
+| Latency | ⚠️ ~1–3s on Apple Silicon | ✅ ~300ms to first token |
+| Setup | ⚠️ Ollama install + 4GB model download | ✅ API key only |
 
-→ **Claude Haiku (API).** A local model (Qwen2.5 7B) was initially considered but failed validation testing with 35% accuracy on Korean code-switching — Chinese character contamination, English term translation to Korean phonetics, and meta-confusion. See `doc/pivot1/reason.md` for full evidence.
+→ **Qwen2.5 7B via Ollama.** Keeps the entire pipeline local — audio and text never leave the machine, no per-use cost, and full offline support after initial setup.
 
-Claude Haiku handles Korean natively with no language confusion, reliable term preservation, and precise instruction following. Audio transcription (Whisper) remains fully local — only the text transcript is sent for polishing. Cost is negligible (~$0.001/transcript). The API key is stored securely in macOS Keychain via `keytar`. If the API is unavailable, the raw Whisper transcript is shown directly.
+If Qwen2.5 produces lower quality on code-switched input — particularly translating English terms inside Korean sentences — the polish layer can be swapped to Claude Haiku with a one-line change in `server.py`. The sidecar interface is identical either way.
 
 ---
 
@@ -131,7 +134,7 @@ Past transcripts need to be saved somewhere so the user can access their history
 
 ## Sidecar Web Framework
 
-Electron runs on Node.js and cannot call Python directly. The sidecar is a small Python HTTP server that bridges the two — Electron sends requests to it, and it runs Whisper and calls the Claude Haiku API. Flask and FastAPI are both Python libraries that create this HTTP server.
+Electron runs on Node.js and cannot call Python directly. The sidecar is a small Python HTTP server that bridges the two — Electron sends requests to it, and it runs Whisper and Ollama. Flask and FastAPI are both Python libraries that create this HTTP server.
 
 The key difference is how they handle waiting: Flask is synchronous (one thing at a time), FastAPI is asynchronous (can handle multiple requests simultaneously). For a single-user local app, this distinction doesn't matter.
 
@@ -142,7 +145,7 @@ The key difference is how they handle waiting: Flask is synchronous (one thing a
 | Simplicity | ✅ Minimal boilerplate | ⚠️ More structure required |
 | Dependencies | ✅ `flask` only | ⚠️ `fastapi` + `uvicorn` |
 
-→ **Flask.** The sidecar serves one user, one request at a time — async concurrency adds no value here. Flask's manual streaming setup is a few extra lines, not a real burden. The sidecar relays Claude Haiku's streaming response as SSE to Electron.
+→ **Flask.** The sidecar serves one user, one request at a time — async concurrency adds no value here. Flask's manual streaming setup is a few extra lines, not a real burden.
 
 ---
 
@@ -158,10 +161,10 @@ The Swift recorder writes mic input to `/tmp/vd_recording.wav`. Once Whisper fin
 
 | Risk | Severity | Mitigation |
 |------|----------|-----------|
-| **Claude API availability / rate limits** | MEDIUM | Haiku has generous limits. If API is down, show raw transcript with "Polish unavailable" notice. |
+| **Qwen2.5 quality on code-switching** | HIGH | Test on 10 real utterances before Phase 1 complete. If fails, switch to Claude Haiku with API key. |
 | **Electron IPC + process orchestration** | HIGH | Build throwaway proof-of-concept for spawning Swift binary + polling sidecar health before committing to Phase 3. |
-| **Whisper model download fails or hangs** | MEDIUM | Document recovery UX (resume download, or clear cache and re-download). |
-| **API key management / security** | MEDIUM | Store in macOS Keychain via `keytar`. Never persist in localStorage or files. |
+| **Model downloads fail or hang** | MEDIUM | Document recovery UX (resume download, or clear cache and re-download). |
+| **VRAM / resource contention** | MEDIUM | Test on target machine. Verify both Whisper + Qwen2.5 load simultaneously. |
 | **Swift compilation on first attempt** | MEDIUM | Verify toolchain before Phase 2. Test universal binary build early. |
 
 **Critical path:** Phases 1–3 must work flawlessly. Phase 4 (P1 features) adds robustness; if squeezed for time, Phases 1–3 can ship without Phase 4.
