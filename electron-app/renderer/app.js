@@ -400,6 +400,7 @@ window.api.onRecordingStatus(({ status }) => {
   }
   if (status === "polishing") {
     statusText.textContent = "Polishing...";
+    btnRecord.disabled = true;
     btnRecord.classList.add("processing");
     recordLabel.textContent = "Polishing";
     isTranscriptInProgress = true;

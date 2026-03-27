@@ -125,9 +125,10 @@ main {
 }
 
 .record-btn.processing {
-  border-color: #444;
-  background: #1a1a1a;
-  opacity: 0.6;
+  border-color: #333;
+  background: #0f0f0f;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #record-icon {
