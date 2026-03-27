@@ -349,7 +349,7 @@ window.api.onSidecarStatus(({ status }) => {
     btnRecord.disabled = false;
     statusText.textContent = "Press Record or ⌘R";
   } else if (!sidecarReady && !isRecording) {
-    statusText.textContent = status === "fatal" ? "Server\nfailed" : "Loading\nServer";
+    statusText.textContent = "Loading\nServer";
   }
   if (status === "fatal") {
     btnRecord.disabled = true;

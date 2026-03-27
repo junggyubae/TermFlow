@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, clipboard } = require("electron");
-const { spawn } = require("child_process");
+const { spawn, execSync } = require("child_process");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
@@ -21,12 +21,15 @@ let recorderProcess = null;
 let healthInterval = null;
 let sidecarRestarted = false;
 let recorderStdout = "";
+const SIDECAR_PORT = 5001;
 
 // ---------------------------------------------------------------------------
 // Sidecar management
 // ---------------------------------------------------------------------------
 function startSidecar() {
   if (sidecarProcess) return;
+
+  killProcessOnPort(SIDECAR_PORT);
 
   sidecarProcess = spawn(VENV_PYTHON, [SIDECAR_SCRIPT], {
     env: { ...process.env },
@@ -53,6 +56,31 @@ function startSidecar() {
   });
 }
 
+function killProcessOnPort(port) {
+  try {
+    const output = execSync(`lsof -ti tcp:${port}`, { encoding: "utf8" }).trim();
+    if (!output) return;
+
+    const pids = output
+      .split("\n")
+      .map((pid) => pid.trim())
+      .filter((pid) => pid && Number.isInteger(Number(pid)));
+
+    for (const pidStr of pids) {
+      const pid = Number(pidStr);
+      if (pid === process.pid) continue;
+      try {
+        process.kill(pid, "SIGKILL");
+        console.log(`[Main] Killed PID ${pid} on port ${port}`);
+      } catch (err) {
+        console.log(`[Main] Failed killing PID ${pid} on port ${port}: ${err.message}`);
+      }
+    }
+  } catch {
+    // No process is bound to the port.
+  }
+}
+
 function stopSidecar() {
   if (sidecarProcess) {
     sidecarProcess.kill();
@@ -66,7 +94,7 @@ function stopSidecar() {
 let healthFailCount = 0;
 
 function pollHealth() {
-  const req = http.get("http://localhost:5001/health", { timeout: 400 }, (res) => {
+  const req = http.get(`http://localhost:${SIDECAR_PORT}/health`, { timeout: 400 }, (res) => {
     if (res.statusCode === 200) {
       healthFailCount = 0;
       send("sidecar-status", { status: "ready" });
@@ -114,7 +142,7 @@ function postJSON(urlPath, body) {
     const req = http.request(
       {
         hostname: "localhost",
-        port: 5001,
+        port: SIDECAR_PORT,
         path: urlPath,
         method: "POST",
         headers: {
@@ -146,7 +174,7 @@ function streamPolish(text, vocab) {
     const req = http.request(
       {
         hostname: "localhost",
-        port: 5001,
+        port: SIDECAR_PORT,
         path: "/polish",
         method: "POST",
         headers: {
