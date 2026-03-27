@@ -6,7 +6,31 @@
 - **Python 3.9+**
 - **Anthropic API Key** (get at https://console.anthropic.com/)
 
-## Quick Start
+## Quick Start (Installer)
+
+The fastest way to get running:
+
+```bash
+git clone https://github.com/junggyubae/cl_r1
+cd cl_r1
+chmod +x src/install/install.sh
+./src/install/install.sh
+```
+
+The installer will:
+- Check Python and Node.js
+- Create venv and install Python dependencies
+- Install Node.js dependencies
+- Prompt for your API key
+- Launch the app
+
+See [src/install/README.md](src/install/README.md) for details.
+
+---
+
+## Manual Setup (Alternative)
+
+If you prefer step-by-step control:
 
 ### 1. Get Your API Key
 1. Go to https://console.anthropic.com/
