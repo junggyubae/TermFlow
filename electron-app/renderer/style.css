@@ -155,7 +155,14 @@ main {
   flex-shrink: 0;
 }
 
+.section-header {
+  display: flex;
+  gap: 0;
+  width: 100%;
+}
+
 .vocab-toggle {
+  flex: 1;
   background: #222;
   border: 1px solid #333;
   border-bottom: none;
@@ -164,7 +171,7 @@ main {
   cursor: pointer;
   padding: 8px;
   text-align: left;
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px 0 0 0;
   -webkit-app-region: no-drag;
   height: 32px;
   display: flex;
@@ -270,20 +277,25 @@ main {
 }
 
 .vocab-delete-all-btn {
-  background: none;
-  border: none;
+  background: #222;
+  border: 1px solid #333;
+  border-bottom: none;
+  border-left: none;
   color: #ef4444;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 8px;
   -webkit-app-region: no-drag;
   white-space: nowrap;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  border-radius: 0 6px 0 0;
 }
 
 .vocab-delete-all-btn:hover {
   color: #f87171;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 4px;
+  background: #2a2a2a;
 }
 
 /* History section */
@@ -296,6 +308,7 @@ main {
 }
 
 .history-toggle {
+  flex: 1;
   background: #222;
   border: 1px solid #333;
   border-bottom: none;
@@ -304,7 +317,7 @@ main {
   cursor: pointer;
   padding: 8px;
   text-align: left;
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px 0 0 0;
   -webkit-app-region: no-drag;
   height: 32px;
   display: flex;
@@ -333,28 +346,26 @@ main {
   display: none;
 }
 
-.history-panel-header {
-  padding: 8px 12px;
-  border-bottom: 1px solid #333;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .history-delete-all-btn {
-  background: none;
-  border: none;
+  background: #222;
+  border: 1px solid #333;
+  border-bottom: none;
+  border-left: none;
   color: #ef4444;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 8px;
   -webkit-app-region: no-drag;
   white-space: nowrap;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  border-radius: 0 6px 0 0;
 }
 
 .history-delete-all-btn:hover {
   color: #f87171;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 4px;
+  background: #2a2a2a;
 }
 
 /* Scrollable history */
