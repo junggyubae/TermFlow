@@ -73,6 +73,99 @@ function syncHistoryEmptyState() {
   }
 }
 
+function renderHistoryEntry(entry, { prepend = true } = {}) {
+  const card = document.createElement("div");
+  card.className = "transcript-card";
+
+  const timestamp = new Date(entry.timestamp);
+  const dateStr = timestamp.toLocaleDateString([], { month: "2-digit", day: "2-digit" });
+  const timeStr = timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const fullTimeStr = `${dateStr} ${timeStr}`;
+
+  card.innerHTML = `
+      <div class="card-header">
+        <span class="badge badge-hidden" data-lang>${entry.language || ""}</span>
+        <span class="card-time">${fullTimeStr}</span>
+        <button class="btn-delete-card">Delete</button>
+      </div>
+      <div class="transcript-section">
+        <div class="transcript-header">
+          <span>Raw</span>
+          <button class="btn-copy" data-copy-raw>Copy</button>
+        </div>
+        <div class="transcript-text raw" data-raw></div>
+      </div>
+      <hr class="section-divider" />
+      <div class="transcript-section">
+        <div class="transcript-header">
+          <span>Polished</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-copy" data-edit-polish>Edit</button>
+            <button class="btn-copy" data-copy-polish>Copy</button>
+          </div>
+        </div>
+        <div class="transcript-text" data-polish></div>
+      </div>
+    `;
+
+  const rawEl = card.querySelector("[data-raw]");
+  const polishEl = card.querySelector("[data-polish]");
+  rawEl.textContent = entry.raw || "";
+  polishEl.textContent = entry.polished || "";
+
+  const rawBtn = card.querySelector("[data-copy-raw]");
+  rawBtn.addEventListener("click", () => {
+    const text = rawEl.textContent;
+    if (text) {
+      window.api.copyToClipboard(text);
+      rawBtn.textContent = "Copied!";
+      setTimeout(() => (rawBtn.textContent = "Copy"), 1500);
+    }
+  });
+
+  const polishBtn = card.querySelector("[data-copy-polish]");
+  polishBtn.addEventListener("click", () => {
+    const text = polishEl.textContent;
+    if (text) {
+      window.api.copyToClipboard(text);
+      polishBtn.textContent = "Copied!";
+      setTimeout(() => (polishBtn.textContent = "Copy"), 1500);
+    }
+  });
+
+  const editBtn = card.querySelector("[data-edit-polish]");
+  editBtn.addEventListener("click", () => {
+    if (polishEl.contentEditable === "true") {
+      polishEl.contentEditable = "false";
+      editBtn.textContent = "Edit";
+      updateHistoryEntry(card, polishEl.textContent);
+    } else {
+      polishEl.contentEditable = "true";
+      editBtn.textContent = "Done";
+      polishEl.focus();
+    }
+  });
+
+  const deleteBtn = card.querySelector(".btn-delete-card");
+  deleteBtn.addEventListener("click", () => {
+    card.remove();
+    syncHistoryEmptyState();
+
+    const key = "vd_history";
+    let hist = [];
+    try {
+      hist = JSON.parse(localStorage.getItem(key) || "[]");
+    } catch (e) {}
+    hist = hist.filter(h => h.raw !== rawEl.textContent);
+    localStorage.setItem(key, JSON.stringify(hist));
+  });
+
+  if (prepend) history.prepend(card);
+  else history.appendChild(card);
+
+  syncHistoryEmptyState();
+}
+
 // ---------------------------------------------------------------------------
 // Vocab management
 // ---------------------------------------------------------------------------
@@ -252,7 +345,7 @@ btnEditCurrentPolish.addEventListener("click", () => {
 // ---------------------------------------------------------------------------
 window.api.onSidecarStatus(({ status }) => {
   sidecarReady = status === "ready";
-  if (sidecarReady && !isRecording) {
+  if (sidecarReady && !isRecording && !isTranscriptInProgress) {
     btnRecord.disabled = false;
     statusText.textContent = "Press Record or ⌘R";
   } else if (!sidecarReady && !isRecording) {
@@ -439,8 +532,6 @@ window.api.onPolishDone(({ text }) => {
   btnRecord.disabled = false;
   statusText.textContent = "Done — press Record or ⌘R";
 
-  // Save current transcript to history
-  saveToHistory(currentRaw.textContent, text, "");
 });
 
 // ---------------------------------------------------------------------------
@@ -468,7 +559,6 @@ function toggleRecording() {
 
   // Prevent starting new recording if transcript is in progress
   if (!isRecording && isTranscriptInProgress) {
-    statusText.textContent = "Transcript in progress...";
     return;
   }
 
@@ -513,15 +603,19 @@ function saveToHistory(raw, polished, language) {
     hist = JSON.parse(localStorage.getItem(key) || "[]");
   } catch (e) {}
 
-  hist.unshift({
+  const entry = {
     raw,
     polished,
     language,
     timestamp: Date.now(),
-  });
+  };
+  hist.unshift(entry);
 
   if (hist.length > 100) hist = hist.slice(0, 100);
   localStorage.setItem(key, JSON.stringify(hist));
+
+  // Immediately reflect in the history UI
+  renderHistoryEntry(entry, { prepend: true });
 }
 
 function updateHistoryEntry(card, newPolished) {
@@ -552,93 +646,7 @@ function loadHistoryFromStorage() {
 
   // Render each stored history entry as a card
   hist.forEach(entry => {
-    const card = document.createElement("div");
-    card.className = "transcript-card";
-
-    const timestamp = new Date(entry.timestamp);
-    const dateStr = timestamp.toLocaleDateString([], { month: "2-digit", day: "2-digit" });
-    const timeStr = timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const fullTimeStr = `${dateStr} ${timeStr}`;
-
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="badge badge-hidden" data-lang>${entry.language || ""}</span>
-        <span class="card-time">${fullTimeStr}</span>
-        <button class="btn-delete-card">Delete</button>
-      </div>
-      <div class="transcript-section">
-        <div class="transcript-header">
-          <span>Raw</span>
-          <button class="btn-copy" data-copy-raw>Copy</button>
-        </div>
-        <div class="transcript-text raw" data-raw>${entry.raw}</div>
-      </div>
-      <hr class="section-divider" />
-      <div class="transcript-section">
-        <div class="transcript-header">
-          <span>Polished</span>
-          <div style="display: flex; gap: 6px;">
-            <button class="btn-copy" data-edit-polish>Edit</button>
-            <button class="btn-copy" data-copy-polish>Copy</button>
-          </div>
-        </div>
-        <div class="transcript-text" data-polish>${entry.polished}</div>
-      </div>
-    `;
-
-    // Append to history panel
-    history.appendChild(card);
-
-    // Set up event listeners
-    const rawEl = card.querySelector("[data-raw]");
-    const rawBtn = card.querySelector("[data-copy-raw]");
-    rawBtn.addEventListener("click", () => {
-      const text = rawEl.textContent;
-      if (text) {
-        window.api.copyToClipboard(text);
-        rawBtn.textContent = "Copied!";
-        setTimeout(() => (rawBtn.textContent = "Copy"), 1500);
-      }
-    });
-
-    const polishEl = card.querySelector("[data-polish]");
-    const polishBtn = card.querySelector("[data-copy-polish]");
-    polishBtn.addEventListener("click", () => {
-      const text = polishEl.textContent;
-      if (text) {
-        window.api.copyToClipboard(text);
-        polishBtn.textContent = "Copied!";
-        setTimeout(() => (polishBtn.textContent = "Copy"), 1500);
-      }
-    });
-
-    const editBtn = card.querySelector("[data-edit-polish]");
-    editBtn.addEventListener("click", () => {
-      if (polishEl.contentEditable === "true") {
-        polishEl.contentEditable = "false";
-        editBtn.textContent = "Edit";
-        updateHistoryEntry(card, polishEl.textContent);
-      } else {
-        polishEl.contentEditable = "true";
-        editBtn.textContent = "Done";
-        polishEl.focus();
-      }
-    });
-
-    const deleteBtn = card.querySelector(".btn-delete-card");
-    deleteBtn.addEventListener("click", () => {
-      card.remove();
-      syncHistoryEmptyState();
-
-      // Remove from localStorage
-      const key = "vd_history";
-      let hist = [];
-      try {
-        hist = JSON.parse(localStorage.getItem(key) || "[]");
-      } catch (e) {}
-      hist = hist.filter(h => h.raw !== rawEl.textContent);
-      localStorage.setItem(key, JSON.stringify(hist));
-    });
+    renderHistoryEntry(entry, { prepend: false });
   });
 }
 
