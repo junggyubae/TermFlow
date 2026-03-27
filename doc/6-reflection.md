@@ -30,4 +30,6 @@
 
 - **Partial transcription — monotonicity is critical** — Showing live text while recording required polling every 150ms: (1) snapshot the latest raw audio chunk, (2) convert to WAV with `afconvert`, (3) send to `/transcribe?is_partial=true`, (4) display only if different from last result. Subprocess overhead of calling `afconvert` 6-7 times/second felt wasteful but it worked. Real insight: partial results *must be monotonic* — text should only grow, never shrink. If partial tokens contradict, the UI feels broken and users distrust the output.
 
+- **Live transcription model — tiny wins on feel, not accuracy** — For partial (live) transcription, chose `whisper tiny` over larger models. The tradeoff is clear: `tiny` is fast enough to keep up with speech in real time, making the UI feel genuinely live. `base` or `small` produce better RAW text but introduce enough latency that the live effect breaks. On a machine with more headroom, upgrading to `base` or `small` is worth trying — but on a standard Mac, `tiny` is the right call to preserve the "live transcription" feel.
+
 ---

@@ -66,6 +66,20 @@ The transcription layer converts recorded audio into raw text. This is where Kor
 
 ---
 
+## Live Transcription Model Size
+
+For partial (live) transcription — shown while the user is still speaking — a separate, smaller Whisper model is used to keep up with real-time audio. The final transcription after recording stops always uses `large-v3`.
+
+| | tiny | base | small |
+|---|---|---|---|
+| Speed on standard Mac | ✅ Fast enough to feel live | ⚠️ Slight lag noticeable | ❌ Latency breaks live feel |
+| RAW text accuracy | ❌ Noticeably worse | ✅ Good | ✅ Better |
+| Live UX feel | ✅ Text keeps up with speech | ⚠️ Borderline | ❌ Feels delayed |
+
+→ **tiny.** The live transcription display exists to give the user immediate feedback that the app is working — not to produce accurate text (that's the final model's job). `tiny` is the only model fast enough on a standard Mac to maintain the "live" feel. On a machine with more headroom, `base` or `small` are worth trying for better intermediate accuracy.
+
+---
+
 ## Language Detection
 
 Whisper can either be told which language to expect, or left to detect it automatically from the first 30 seconds of audio.
