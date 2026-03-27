@@ -266,6 +266,7 @@ def polish():
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    load_whisper()
+    import threading
+    threading.Thread(target=load_whisper, daemon=True).start()
     print("Sidecar ready on http://localhost:5001", flush=True)
     app.run(threaded=True, port=5001, debug=False)

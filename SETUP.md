@@ -2,18 +2,20 @@
 
 ## Prerequisites
 - **macOS** (Apple Silicon or Intel)
+- **Node.js** (v18+)
+- **Python 3.9+**
 - **Anthropic API Key** (get at https://console.anthropic.com/)
 
-## Quick Start (Packaged App)
+## Quick Start
 
 ### 1. Get Your API Key
 1. Go to https://console.anthropic.com/
 2. Click **API Keys** → **Create Key**
 3. Copy the key (starts with `sk-ant-`)
 
-### 2. Build the App
+### 2. Install Dependencies
 ```bash
-# Set up Python sidecar
+# Python sidecar
 cd src/sidecar
 python3 -m venv venv
 source venv/bin/activate
@@ -21,58 +23,26 @@ pip install -r requirements.txt
 deactivate
 cd ../..
 
-# Build the Electron app
+# Electron app
 cd src/electron-app
 npm install
-npm run dist
 cd ../..
 ```
 
 ### 3. Run the App
 ```bash
+cd src/electron-app
 export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
 export WHISPER_MODEL=medium
-cp -r src/electron-app/dist/mac-arm64/Voice\ Dictation.app /Applications/
-open /Applications/Voice\ Dictation.app
+npx electron .
 ```
 
 ---
 
-## Development Setup (Optional)
+## Build Packaged App (Optional)
 
-If you want to run from source instead of the packaged app:
+To distribute as a standalone `.app`:
 
-### Prerequisites for Development
-- Node.js (v18+)
-- Python 3.9+
-
-### 1. Install Node Dependencies
-```bash
-cd src/electron-app
-npm install
-```
-
-### 2. Install Python Sidecar Dependencies
-```bash
-cd src/sidecar
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 3. Run in Development Mode
-```bash
-cd src/electron-app
-
-# Set environment variables
-export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
-export WHISPER_MODEL=medium
-
-# Start the app
-npx electron .
-```
-
-### 4. Rebuild and Reinstall (if modified)
 ```bash
 cd src/electron-app
 npm run dist

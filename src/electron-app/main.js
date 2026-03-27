@@ -14,10 +14,34 @@ const SIDECAR_DIR = IS_PACKAGED
   ? path.join(RESOURCES_PATH, "sidecar")
   : path.join(RESOURCES_PATH, "src", "sidecar");
 const SIDECAR_SCRIPT = path.join(SIDECAR_DIR, "server.py");
-const VENV_PYTHON = path.join(SIDECAR_DIR, "venv", "bin", "python3");
+// Venv lives in userData (outside app bundle) so macOS doesn't block it
+const VENV_DIR = path.join(app.getPath("userData"), "sidecar-venv");
+const VENV_PYTHON = path.join(VENV_DIR, "bin", "python3");
+const REQUIREMENTS = path.join(SIDECAR_DIR, "requirements.txt");
 const RECORDER_PATH = IS_PACKAGED
   ? path.join(process.resourcesPath, "recorder")
   : path.join(RESOURCES_PATH, "src", "swift-audio", "recorder");
+
+// ---------------------------------------------------------------------------
+// Venv setup
+// ---------------------------------------------------------------------------
+function setupVenv() {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(VENV_PYTHON)) return resolve();
+    console.log("[Main] Creating venv at", VENV_DIR);
+    const create = spawn("python3", ["-m", "venv", VENV_DIR], { stdio: "inherit" });
+    create.on("close", (code) => {
+      if (code !== 0) return reject(new Error("venv creation failed"));
+      console.log("[Main] Installing requirements...");
+      const pip = spawn(
+        path.join(VENV_DIR, "bin", "pip"),
+        ["install", "-r", REQUIREMENTS, "--quiet"],
+        { stdio: "inherit" }
+      );
+      pip.on("close", (c) => (c === 0 ? resolve() : reject(new Error("pip install failed"))));
+    });
+  });
+}
 
 // ---------------------------------------------------------------------------
 // State
@@ -416,8 +440,15 @@ app.whenReady().then(() => {
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
 
-  startSidecar();
-  healthInterval = setInterval(pollHealth, 500);
+  setupVenv()
+    .then(() => {
+      startSidecar();
+      healthInterval = setInterval(pollHealth, 500);
+    })
+    .catch((err) => {
+      console.error("[Main] Venv setup failed:", err.message);
+      send("sidecar-status", { status: "fatal" });
+    });
 });
 
 app.on("window-all-closed", () => {
