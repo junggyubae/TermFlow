@@ -32,11 +32,6 @@ cd ../..
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
 export WHISPER_MODEL=medium
-open src/electron-app/dist/mac-arm64/Voice\ Dictation.app
-```
-
-Or copy to Applications folder:
-```bash
 cp -r src/electron-app/dist/mac-arm64/Voice\ Dictation.app /Applications/
 open /Applications/Voice\ Dictation.app
 ```
@@ -77,10 +72,12 @@ export WHISPER_MODEL=medium
 npx electron .
 ```
 
-### 4. Build New Package (if modified)
+### 4. Rebuild and Reinstall (if modified)
 ```bash
 cd src/electron-app
 npm run dist
+cp -r dist/mac-arm64/Voice\ Dictation.app /Applications/
+open /Applications/Voice\ Dictation.app
 ```
 
 **Whisper Model Options:**
