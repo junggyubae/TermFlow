@@ -80,18 +80,35 @@ install_node() {
 
 # Get API key if not set
 get_api_key() {
+  # Priority: env var > saved file > prompt
   if [ -z "$ANTHROPIC_API_KEY" ]; then
-    print_header "Anthropic API Key required"
-    echo "Get your API key at: https://console.anthropic.com/api-keys"
-    echo ""
-    read -p "Enter your API key (sk-ant-...): " api_key
+    CONFIG_DIR="$HOME/.config/voice-dictation"
+    API_KEY_FILE="$CONFIG_DIR/api-key"
 
-    if [ -z "$api_key" ]; then
-      print_error "API key cannot be empty"
-      exit 1
+    # Check if saved API key exists
+    if [ -f "$API_KEY_FILE" ]; then
+      export ANTHROPIC_API_KEY=$(cat "$API_KEY_FILE")
+      echo "✓ Using saved API key"
+    else
+      # Prompt for new API key
+      print_header "Anthropic API Key required"
+      echo "Get your API key at: https://console.anthropic.com/api-keys"
+      echo ""
+      read -p "Enter your API key (sk-ant-...): " api_key
+
+      if [ -z "$api_key" ]; then
+        print_error "API key cannot be empty"
+        exit 1
+      fi
+
+      export ANTHROPIC_API_KEY="$api_key"
+
+      # Save for future use
+      mkdir -p "$CONFIG_DIR"
+      echo "$api_key" > "$API_KEY_FILE"
+      chmod 600 "$API_KEY_FILE"
+      echo "✓ API key saved to $API_KEY_FILE"
     fi
-
-    export ANTHROPIC_API_KEY="$api_key"
   fi
 }
 
@@ -112,7 +129,7 @@ run_app() {
 main() {
   echo -e "${GREEN}"
   echo "╔════════════════════════════════════════╗"
-  echo "║       Voice Dictation Installer        ║"
+  echo "║       Voice Dictation Launcher         ║"
   echo "╚════════════════════════════════════════╝"
   echo -e "${NC}"
 

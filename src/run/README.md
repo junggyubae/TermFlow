@@ -29,9 +29,16 @@ After the first run, just use:
 ./src/run/run.sh
 ```
 
-The launcher will skip setup and launch the app directly. If you're prompted for an API key again, either:
-- Set it in your environment: `export ANTHROPIC_API_KEY="sk-ant-..."`
-- Or enter it when prompted
+The launcher will:
+- Skip setup (venv, node_modules already installed)
+- Reuse your saved API key automatically
+- Launch the app directly
+
+**No re-entry needed.** Your API key is saved to `~/.config/voice-dictation/api-key` after first launch.
+
+To use a different API key, either:
+- `export ANTHROPIC_API_KEY="sk-ant-..."` before running
+- Or delete `~/.config/voice-dictation/api-key` to be prompted again
 
 ## What You Need
 
