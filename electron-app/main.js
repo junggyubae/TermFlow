@@ -211,19 +211,34 @@ let streamingFilePath = null;
 let streamingInterval = null;
 
 ipcMain.on("start-recording", () => {
-  if (recorderProcess) return;
+  if (recorderProcess) {
+    console.log("[Main] Recorder already running");
+    return;
+  }
 
+  console.log("[Main] Starting recorder from:", RECORDER_PATH);
   recorderStdout = "";
   streamingFilePath = null;
-  recorderProcess = spawn(RECORDER_PATH, [], { stdio: ["pipe", "pipe", "pipe"] });
+
+  try {
+    recorderProcess = spawn(RECORDER_PATH, [], { stdio: ["pipe", "pipe", "pipe"] });
+    console.log("[Main] Recorder spawned, PID:", recorderProcess.pid);
+  } catch (err) {
+    console.error("[Main] Failed to spawn recorder:", err.message);
+    send("error", { code: "RECORDER_SPAWN_FAILED", message: err.message });
+    recorderProcess = null;
+    return;
+  }
 
   recorderProcess.stdout.on("data", (data) => {
-    recorderStdout += data.toString();
+    const text = data.toString();
+    console.log("[Recorder stdout]", text);
+    recorderStdout += text;
   });
 
   recorderProcess.stderr.on("data", (data) => {
     const line = data.toString().trim();
-    console.log("[Recorder]", line);
+    console.log("[Recorder stderr]", line);
 
     // Capture file path for streaming
     if (line.startsWith("FILE_PATH:")) {
@@ -235,6 +250,7 @@ ipcMain.on("start-recording", () => {
     }
 
     if (line.startsWith("RECORDING")) {
+      console.log("[Main] Recording started");
       send("recording-status", { status: "recording" });
     }
   });
@@ -243,6 +259,10 @@ ipcMain.on("start-recording", () => {
     console.error("[Recorder] spawn error:", err.message);
     send("error", { code: "MIC_DENIED", message: err.message });
     recorderProcess = null;
+  });
+
+  recorderProcess.on("close", (code) => {
+    console.log("[Recorder] closed with code:", code);
   });
 });
 
