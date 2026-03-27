@@ -425,3 +425,8 @@ app.on("window-all-closed", () => {
   if (recorderProcess) recorderProcess.kill();
   app.quit();
 });
+
+app.on("will-quit", () => {
+  // Force-kill anything still holding port 5001 (e.g. Flask child threads)
+  killProcessOnPort(SIDECAR_PORT);
+});
