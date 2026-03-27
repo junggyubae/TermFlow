@@ -1,25 +1,37 @@
-# Voice Dictation Installer
+# Voice Dictation Launcher
 
-One-command setup for macOS.
+One-command setup and launch for macOS.
 
-## Quick Start
+## Quick Start (First Time)
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/junggyubae/cl_r1
 cd cl_r1
 
-# 2. Run the installer
-chmod +x src/install/install.sh
-./src/install/install.sh
+# 2. Run the launcher
+chmod +x src/run/run.sh
+./src/run/run.sh
 ```
 
-That's it! The installer will:
+The launcher will:
 - ✅ Check that Python 3 and Node.js are installed
 - ✅ Create Python venv and install dependencies
 - ✅ Install Node.js dependencies
 - ✅ Prompt for your Anthropic API key
 - ✅ Launch the app
+
+## Relaunch Later
+
+After the first run, just use:
+
+```bash
+./src/run/run.sh
+```
+
+The launcher will skip setup and launch the app directly. If you're prompted for an API key again, either:
+- Set it in your environment: `export ANTHROPIC_API_KEY="sk-ant-..."`
+- Or enter it when prompted
 
 ## What You Need
 
@@ -33,13 +45,13 @@ That's it! The installer will:
 **Python venv already exists:**
 ```bash
 rm -rf src/sidecar/venv
-./src/install/install.sh
+./src/run/run.sh
 ```
 
 **Node modules already exist:**
 ```bash
 rm -rf src/electron-app/node_modules
-./src/install/install.sh
+./src/run/run.sh
 ```
 
 **Port 5001 already in use:**

@@ -6,25 +6,37 @@
 - **Python 3.9+**
 - **Anthropic API Key** (get at https://console.anthropic.com/)
 
-## Quick Start (Installer)
+## Quick Start (Launcher)
 
 The fastest way to get running:
 
 ```bash
 git clone https://github.com/junggyubae/cl_r1
 cd cl_r1
-chmod +x src/install/install.sh
-./src/install/install.sh
+chmod +x src/run/run.sh
+./src/run/run.sh
 ```
 
-The installer will:
+The launcher will:
 - Check Python and Node.js
 - Create venv and install Python dependencies
 - Install Node.js dependencies
 - Prompt for your API key
 - Launch the app
 
-See [src/install/README.md](src/install/README.md) for details.
+See [src/run/README.md](src/run/README.md) for details.
+
+---
+
+## Relaunch the App
+
+After the first run, simply:
+
+```bash
+./src/run/run.sh
+```
+
+The launcher will detect existing dependencies and skip setup, launching the app directly.
 
 ---
 
