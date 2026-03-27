@@ -75,7 +75,7 @@ npx electron .
 
 ---
 
-## Build Packaged App (Optional)
+## Build Packaged App (For Reuse)
 
 To distribute as a standalone `.app`:
 
