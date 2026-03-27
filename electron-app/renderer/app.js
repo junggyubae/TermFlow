@@ -36,6 +36,7 @@ let activeCopyRawBtn = null;
 let activeCopyPolishBtn = null;
 let vocabMessageResetTimer = null;
 const defaultVocabPlaceholder = vocabInput.placeholder;
+let rawFinalizeTimer = null;
 
 function showVocabInputMessage(message, duration = 1500) {
   vocabInput.value = "";
@@ -468,11 +469,10 @@ function createCard() {
 // ---------------------------------------------------------------------------
 window.api.onRecordingStatus(({ status }) => {
   if (status === "recording") {
-    // Save previous transcript to history BEFORE clearing current area
-    if (currentRaw.textContent && currentRaw.textContent !== "Recording...") {
-      saveToHistory(currentRaw.textContent, currentPolish.textContent, "");
+    if (rawFinalizeTimer) {
+      clearInterval(rawFinalizeTimer);
+      rawFinalizeTimer = null;
     }
-
     isRecording = true;
     isTranscriptInProgress = true;
     btnRecord.classList.add("recording");
@@ -480,7 +480,7 @@ window.api.onRecordingStatus(({ status }) => {
     recordLabel.textContent = "Stop";
     statusText.textContent = "Listening...";
     currentTranscript.classList.remove("hidden");
-    currentRaw.textContent = "Recording...";
+    currentRaw.textContent = "";
     currentPolish.textContent = "";
     currentPolished = "";
   }
@@ -503,9 +503,34 @@ window.api.onRecordingStatus(({ status }) => {
 // ---------------------------------------------------------------------------
 // Transcription result
 // ---------------------------------------------------------------------------
-window.api.onTranscriptionResult(({ raw, language, confidence }) => {
-  // Update ONLY the current transcript display area (not history)
+window.api.onTranscriptionResult(({ raw }) => {
+  // Live partial raw during recording only.
   currentRaw.textContent = raw;
+});
+
+window.api.onTranscriptionComplete(({ raw }) => {
+  // Keep existing partial raw and append missing tail progressively.
+  if (rawFinalizeTimer) {
+    clearInterval(rawFinalizeTimer);
+    rawFinalizeTimer = null;
+  }
+  const current = currentRaw.textContent || "";
+  if (!raw || current === raw) {
+    currentRaw.textContent = raw || current;
+  } else if (raw.startsWith(current)) {
+    const suffixTokens = raw.slice(current.length).split(/(\s+)/).filter((t) => t.length > 0);
+    let idx = 0;
+    rawFinalizeTimer = setInterval(() => {
+      currentRaw.textContent += suffixTokens[idx] || "";
+      idx += 1;
+      if (idx >= suffixTokens.length) {
+        clearInterval(rawFinalizeTimer);
+        rawFinalizeTimer = null;
+      }
+    }, 35);
+  } else {
+    currentRaw.textContent = raw;
+  }
 
   currentPolished = "";
   currentPolish.innerHTML = '<span class="cursor"></span>';
@@ -522,6 +547,11 @@ window.api.onPolishToken(({ token }) => {
 window.api.onPolishDone(({ text }) => {
   currentPolished = text;
   currentPolish.textContent = text;
+
+  // Persist only after the full pipeline completes.
+  if (currentRaw.textContent || text) {
+    saveToHistory(currentRaw.textContent || "", text || "", "");
+  }
 
   isRecording = false;
   isTranscriptInProgress = false;
@@ -580,6 +610,10 @@ window.api.onError(({ code, message }) => {
   console.error(`[Error] ${code}: ${message}`);
   errorMessage.textContent = `${code}: ${message}`;
   errorBanner.classList.remove("hidden");
+  if (rawFinalizeTimer) {
+    clearInterval(rawFinalizeTimer);
+    rawFinalizeTimer = null;
+  }
 
   isRecording = false;
   btnRecord.classList.remove("recording");

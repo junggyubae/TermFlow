@@ -19,6 +19,9 @@ class Recorder {
         let uid = ProcessInfo.processInfo.globallyUniqueString
         rawURL = tempDir.appendingPathComponent("vd_raw_\(uid).caf")
         finalURL = tempDir.appendingPathComponent("vd_\(uid).wav")
+        if let rawPath = rawURL?.path {
+            FileHandle.standardError.write("RAW_PATH:\(rawPath)\n".data(using: .utf8)!)
+        }
 
         outputFile = try AVAudioFile(forWriting: rawURL!, settings: hwFormat.settings)
 

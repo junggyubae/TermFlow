@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain, clipboard } = require("electron");
-const { spawn, execSync } = require("child_process");
+const { spawn, execSync, execFile } = require("child_process");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -21,6 +22,10 @@ let recorderProcess = null;
 let healthInterval = null;
 let sidecarRestarted = false;
 let recorderStdout = "";
+let recorderRawPath = "";
+let partialTranscribeInterval = null;
+let partialTranscribeInFlight = false;
+let latestPartialRaw = "";
 const SIDECAR_PORT = 5001;
 
 // ---------------------------------------------------------------------------
@@ -168,6 +173,52 @@ function postJSON(urlPath, body) {
   });
 }
 
+function startPartialTranscribeLoop(vocab) {
+  stopPartialTranscribeLoop();
+  partialTranscribeInterval = setInterval(async () => {
+    if (partialTranscribeInFlight || !recorderRawPath || !fs.existsSync(recorderRawPath)) {
+      return;
+    }
+    partialTranscribeInFlight = true;
+    let snapshotWavPath = "";
+    try {
+      snapshotWavPath = path.join(
+        os.tmpdir(),
+        `vd_partial_${Date.now()}_${Math.random().toString(36).slice(2)}.wav`
+      );
+      await new Promise((resolve, reject) => {
+        execFile(
+          "/usr/bin/afconvert",
+          [recorderRawPath, snapshotWavPath, "-d", "LEI16", "-f", "WAVE", "-r", "16000", "-c", "1"],
+          (err) => (err ? reject(err) : resolve())
+        );
+      });
+      const partial = await postJSON("/transcribe", {
+        path: snapshotWavPath,
+        vocab,
+        beam_size: 1,
+      });
+      if (partial?.raw && partial.raw !== latestPartialRaw) {
+        latestPartialRaw = partial.raw;
+        send("streaming-transcribe", { raw: partial.raw });
+      }
+    } catch {
+      // Ignore transient chunk transcription errors while recording.
+    } finally {
+      if (snapshotWavPath) fs.unlink(snapshotWavPath, () => {});
+      partialTranscribeInFlight = false;
+    }
+  }, 200);
+}
+
+function stopPartialTranscribeLoop() {
+  if (partialTranscribeInterval) {
+    clearInterval(partialTranscribeInterval);
+    partialTranscribeInterval = null;
+  }
+  partialTranscribeInFlight = false;
+}
+
 function streamPolish(text, vocab) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify({ text, vocab });
@@ -235,17 +286,31 @@ ipcMain.on("start-recording", () => {
   if (recorderProcess) return;
 
   recorderStdout = "";
+  recorderRawPath = "";
+  latestPartialRaw = "";
   recorderProcess = spawn(RECORDER_PATH, [], { stdio: ["pipe", "pipe", "pipe"] });
+
+  const vocabPromise = new Promise((res) => {
+    mainWindow.webContents.executeJavaScript(
+      `(() => { try { return JSON.parse(localStorage.getItem("vd_vocab") || "{}").terms || []; } catch(e) { return []; } })()`
+    ).then(res).catch(() => res([]));
+  });
 
   recorderProcess.stdout.on("data", (data) => {
     recorderStdout += data.toString();
   });
 
   recorderProcess.stderr.on("data", (data) => {
-    const line = data.toString().trim();
-    console.log("[Recorder]", line);
-    if (line.startsWith("RECORDING")) {
-      send("recording-status", { status: "recording" });
+    const lines = data.toString().split("\n").map((line) => line.trim()).filter(Boolean);
+    for (const line of lines) {
+      console.log("[Recorder]", line);
+      if (line.startsWith("RAW_PATH:")) {
+        recorderRawPath = line.slice("RAW_PATH:".length).trim();
+        vocabPromise.then((vocab) => startPartialTranscribeLoop(vocab));
+      }
+      if (line.startsWith("RECORDING")) {
+        send("recording-status", { status: "recording" });
+      }
     }
   });
 
@@ -263,6 +328,7 @@ ipcMain.on("stop-recording", () => {
   }
 
   recorderProcess.stdin.write("stop\n");
+  stopPartialTranscribeLoop();
   send("recording-status", { status: "transcribing" });
 
   recorderProcess.on("close", async (code) => {
@@ -293,11 +359,7 @@ ipcMain.on("stop-recording", () => {
         return;
       }
 
-      send("transcription-result", {
-        raw: result.raw,
-        language: result.language,
-        confidence: result.confidence,
-      });
+      send("transcription-complete", { raw: result.raw });
 
       // Polish
       send("recording-status", { status: "polishing" });
@@ -352,6 +414,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   clearInterval(healthInterval);
+  stopPartialTranscribeLoop();
   stopSidecar();
   if (recorderProcess) recorderProcess.kill();
   app.quit();

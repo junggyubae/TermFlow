@@ -17,7 +17,9 @@ contextBridge.exposeInMainWorld("api", {
   onSidecarStatus: (fn) =>
     ipcRenderer.on("sidecar-status", (_, data) => fn(data)),
   onTranscriptionResult: (fn) =>
-    ipcRenderer.on("transcription-result", (_, data) => fn(data)),
+    ipcRenderer.on("streaming-transcribe", (_, data) => fn(data)),
+  onTranscriptionComplete: (fn) =>
+    ipcRenderer.on("transcription-complete", (_, data) => fn(data)),
   onPolishToken: (fn) =>
     ipcRenderer.on("polish-token", (_, data) => fn(data)),
   onPolishDone: (fn) =>
