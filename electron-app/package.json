@@ -22,7 +22,7 @@
       "sign": null
     },
     "extraResources": [
-      {"from": "../sidecar", "to": "sidecar", "filter": ["!venv", "!__pycache__"]},
+      {"from": "../sidecar", "to": "sidecar", "filter": ["!__pycache__", "!**/__pycache__"]},
       {"from": "../swift-audio/recorder", "to": "recorder"}
     ]
   }

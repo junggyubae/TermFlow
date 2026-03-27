@@ -11,8 +11,22 @@
 2. Click **API Keys** → **Create Key**
 3. Copy the key (starts with `sk-ant-`)
 
-### 2. Download the App
-The packaged app is in: `electron-app/dist/mac-arm64/Voice Dictation.app`
+### 2. Build the App
+```bash
+# Set up Python sidecar
+cd sidecar
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+cd ..
+
+# Build the Electron app
+cd electron-app
+npm install
+npm run dist
+cd ..
+```
 
 ### 3. Run the App
 ```bash
