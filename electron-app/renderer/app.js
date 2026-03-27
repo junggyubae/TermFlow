@@ -663,4 +663,3 @@ function loadHistoryFromStorage() {
 syncHistoryEmptyState();
 // Load history from localStorage
 loadHistoryFromStorage();
-V
