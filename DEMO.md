@@ -21,25 +21,18 @@ A macOS desktop app for Korean-English bilingual voice dictation. The user speak
 See **SETUP.md** for full instructions. Quick version:
 
 ```bash
-# 1. Install Python dependencies
-cd src/sidecar
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-deactivate
-cd ../..
-
-# 2. Install Node dependencies
-cd src/electron-app
-npm install
-cd ../..
-
-# 3. Run
-cd src/electron-app
-export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
-export WHISPER_MODEL=medium
-npx electron .
+git clone https://github.com/junggyubae/cl_r1
+cd cl_r1
+chmod +x src/run/run.sh
+./src/run/run.sh
 ```
+
+The launcher script will:
+- Check Python 3 and Node.js are installed
+- Create a Python venv and install dependencies
+- Install Node.js dependencies
+- Prompt you for your Anthropic API key (only once — it's saved for future runs)
+- Launch the app
 
 **Note on first run:** The Whisper model (~1.5 GB) downloads automatically on first transcription. Subsequent runs load from cache in ~5 seconds. The terminal will show `[Sidecar] Whisper medium loaded in X.Xs` when ready — the UI status also updates to "Press Record or ⌘R".
 

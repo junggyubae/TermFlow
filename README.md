@@ -17,6 +17,19 @@ This app is built for the way Korean engineers, researchers, and students actual
 
 ---
 
+## Quick Start
+
+```bash
+git clone https://github.com/junggyubae/cl_r1
+cd cl_r1
+chmod +x src/run/run.sh
+./src/run/run.sh
+```
+
+One command sets up dependencies, saves your API key, and launches the app. See [SETUP.md](SETUP.md) for details.
+
+---
+
 ## Docs
 
 | File | Contents |
