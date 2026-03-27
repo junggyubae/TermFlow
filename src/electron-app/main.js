@@ -131,8 +131,17 @@ let healthFailCount = 0;
 function pollHealth() {
   const req = http.get(`http://localhost:${SIDECAR_PORT}/health`, { timeout: 400 }, (res) => {
     if (res.statusCode === 200) {
-      healthFailCount = 0;
-      send("sidecar-status", { status: "ready" });
+      let body = "";
+      res.on("data", (chunk) => (body += chunk));
+      res.on("end", () => {
+        healthFailCount = 0;
+        try {
+          const json = JSON.parse(body);
+          send("sidecar-status", { status: json.status === "ok" ? "ready" : "loading" });
+        } catch {
+          send("sidecar-status", { status: "ready" });
+        }
+      });
     } else {
       handleHealthFail();
     }

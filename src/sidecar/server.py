@@ -16,10 +16,11 @@ app = Flask(__name__)
 # Whisper models — loaded at startup to hide latency
 # ---------------------------------------------------------------------------
 whisper_models = {}
+models_ready = False
 
 
 def load_whisper():
-    global whisper_models
+    global whisper_models, models_ready
     from faster_whisper import WhisperModel
 
     final_model_size = os.environ.get("WHISPER_MODEL_FINAL", os.environ.get("WHISPER_MODEL", "large-v3"))
@@ -31,6 +32,7 @@ def load_whisper():
         whisper_models[model_size] = WhisperModel(model_size, device="cpu", compute_type="int8")
         elapsed = time.time() - start
         print(f"Whisper {model_size} loaded in {elapsed:.1f}s", flush=True)
+    models_ready = True
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +40,7 @@ def load_whisper():
 # ---------------------------------------------------------------------------
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok" if models_ready else "loading"})
 
 
 # ---------------------------------------------------------------------------
