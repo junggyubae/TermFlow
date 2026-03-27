@@ -1,4 +1,4 @@
-# Voice Dictation Launcher
+# TermFlow Launcher
 
 One-command setup and launch for macOS.
 

@@ -1,6 +1,6 @@
-# Voice Dictation
+# TermFlow — Speak naturally. Paste cleanly.
 
-A macOS desktop app for Korean-English bilingual voice dictation. Speak naturally in mixed Korean and English — transcribed locally with Whisper, polished with Claude AI.
+A macOS desktop app for Korean engineers who naturally mix English technical terms into Korean speech.
 
 ---
 

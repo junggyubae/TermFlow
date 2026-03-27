@@ -114,7 +114,7 @@ get_api_key() {
 
 # Run the app
 run_app() {
-  print_header "Starting Voice Dictation..."
+  print_header "Starting TermFlow..."
   echo ""
   echo "Keyboard shortcuts:"
   echo "  ⌘R - Start/stop recording"
@@ -129,7 +129,7 @@ run_app() {
 main() {
   echo -e "${GREEN}"
   echo "╔════════════════════════════════════════╗"
-  echo "║       Voice Dictation Launcher         ║"
+  echo "║       TermFlow Launcher         ║"
   echo "╚════════════════════════════════════════╝"
   echo -e "${NC}"
 

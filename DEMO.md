@@ -1,6 +1,6 @@
 # Demo Guide for Evaluators
 
-This guide is for graders and evaluators assessing the Voice Dictation app. It covers what was built, how to run it, and what to look for when testing each requirement.
+This guide is for graders and evaluators assessing **TermFlow** (Speak naturally. Paste cleanly.). It covers what was built, how to run it, and what to look for when testing each requirement.
 
 ---
 
