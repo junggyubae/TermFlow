@@ -1,11 +1,41 @@
 # Setup Instructions
 
 ## Prerequisites
+- **macOS** (Apple Silicon or Intel)
+- **Anthropic API Key** (get at https://console.anthropic.com/)
+
+## Quick Start (Packaged App)
+
+### 1. Get Your API Key
+1. Go to https://console.anthropic.com/
+2. Click **API Keys** → **Create Key**
+3. Copy the key (starts with `sk-ant-`)
+
+### 2. Download the App
+The packaged app is in: `electron-app/dist/mac-arm64/Voice Dictation.app`
+
+### 3. Run the App
+```bash
+export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
+export WHISPER_MODEL=medium
+open electron-app/dist/mac-arm64/Voice\ Dictation.app
+```
+
+Or copy to Applications folder:
+```bash
+cp -r electron-app/dist/mac-arm64/Voice\ Dictation.app /Applications/
+open /Applications/Voice\ Dictation.app
+```
+
+---
+
+## Development Setup (Optional)
+
+If you want to run from source instead of the packaged app:
+
+### Prerequisites for Development
 - Node.js (v18+)
 - Python 3.9+
-- macOS (currently macOS-only for the Swift audio recorder)
-
-## Installation
 
 ### 1. Install Node Dependencies
 ```bash
@@ -21,39 +51,30 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Download Whisper Models
-The app uses OpenAI's Whisper for speech-to-text. Models are downloaded automatically on first use.
-
-**Whisper Model Options:**
-- `tiny` - Fastest, lowest quality
-- `base` - Fast, reasonable quality
-- `small` - Good balance (default)
-- `medium` - Better quality, slower
-- `large` - Best quality, slowest
-
-Set model via environment variable:
-```bash
-export WHISPER_MODEL=medium
-```
-
-### 4. Build Swift Audio Recorder (if needed)
-```bash
-cd swift-audio
-swiftc -O main.swift -o recorder
-```
-
-## Running the App
-
+### 3. Run in Development Mode
 ```bash
 cd electron-app
 
-# Set required environment variables
-export ANTHROPIC_API_KEY="your-api-key-here"
+# Set environment variables
+export ANTHROPIC_API_KEY="sk-ant-YOUR_KEY_HERE"
 export WHISPER_MODEL=medium
 
 # Start the app
 npx electron .
 ```
+
+### 4. Build New Package (if modified)
+```bash
+cd electron-app
+npm run dist
+```
+
+**Whisper Model Options:**
+- `tiny` - Fastest, lowest quality
+- `base` - Fast, reasonable quality
+- `small` - Good balance
+- `medium` - Better quality, slower
+- `large` - Best quality, slowest
 
 **Keyboard Shortcuts:**
 - `⌘R` - Start/stop recording
