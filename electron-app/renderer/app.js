@@ -392,17 +392,17 @@ window.api.onRecordingStatus(({ status }) => {
     currentPolished = "";
   }
   if (status === "transcribing") {
-    statusText.textContent = "Transcribing...";
+    statusText.textContent = "Transcribing";
+    recordLabel.textContent = "Record";
     btnRecord.disabled = true;
     btnRecord.classList.add("processing");
-    recordLabel.textContent = "Transcribing";
     isTranscriptInProgress = true;
   }
   if (status === "polishing") {
-    statusText.textContent = "Polishing...";
+    statusText.textContent = "Polishing";
+    recordLabel.textContent = "Record";
     btnRecord.disabled = true;
     btnRecord.classList.add("processing");
-    recordLabel.textContent = "Polishing";
     isTranscriptInProgress = true;
   }
 });
