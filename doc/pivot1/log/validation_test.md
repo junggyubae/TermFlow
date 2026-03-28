@@ -4,7 +4,7 @@
 **Timeline:** ~30 minutes
 **Success Criteria:** 19/20 utterances pass (95%+ accuracy).
 
-> **History:** A local model was tested first and failed at 35% accuracy. See `pivot1/reason.md` for full evidence. Claude Haiku is now the primary polish model.
+> **History:** A local model was tested first and failed at 35% accuracy. See `pivot1/0-reason_for_pivot.md` for full evidence. Claude Haiku is now the primary polish model.
 
 ---
 

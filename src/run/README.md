@@ -73,4 +73,4 @@ rm -rf ~/.cache/huggingface/hub/models--Systran--faster-whisper-*
 
 ## Manual Setup (if you prefer)
 
-See [../../../SETUP.md](../../../SETUP.md) for step-by-step instructions.
+See [../../SETUP.md](../../SETUP.md) for step-by-step instructions.

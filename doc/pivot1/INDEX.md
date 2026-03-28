@@ -15,7 +15,7 @@ This folder contains the **complete pre-pivot planning** (the original plan to u
 
 ## Key Files
 
-### reason.md (START HERE)
+### 0-reason_for_pivot.md (START HERE)
 **Purpose:** The pivot decision document — explains what went wrong, why we changed, and the tradeoffs
 
 **What it covers:**
@@ -73,7 +73,7 @@ Similar structure to `doc/log/`, but from before the pivot decision:
 | Item | Location | Status |
 |------|----------|--------|
 | **Final planning (Claude Haiku)** | `doc/1-5.md` | Current architecture |
-| **Pivot evidence** | `doc/pivot1/reason.md` | Shows decision was well-reasoned |
+| **Pivot evidence** | `doc/pivot1/0-reason_for_pivot.md` | Shows decision was well-reasoned |
 | **Pre-pivot planning** | `doc/pivot1/1-6.md` | Archived for reference |
 | **Validation that prompted pivot** | `doc/pivot1/6-validation.md` | Testing methodology |
 | **Test results (failure)** | `doc/log/validation-results.md` | Why we pivoted |
@@ -119,7 +119,7 @@ Mar 26–27, Implementation Phase
 ## When to Share This with Evaluators
 
 **Mention in README:**
-> "Our validation testing revealed that Qwen2.5 7B couldn't handle Korean/English code-switching (35% accuracy). We pivoted to Claude Haiku, trading some privacy for reliability. See `doc/pivot1/reason.md` for details."
+> "Our validation testing revealed that Qwen2.5 7B couldn't handle Korean/English code-switching (35% accuracy). We pivoted to Claude Haiku, trading some privacy for reliability. See `doc/pivot1/0-reason_for_pivot.md` for details."
 
 This shows:
 - You test your assumptions

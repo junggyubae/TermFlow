@@ -108,7 +108,7 @@ The polish layer takes raw Whisper output and turns it into clean, readable text
 | Latency | ✅ ~300ms to first token |
 | Setup | ✅ API key only |
 
-→ **Claude Haiku (API).** A local model (Qwen2.5 7B) was initially considered but failed validation testing with 35% accuracy on Korean code-switching — Chinese character contamination, English term translation to Korean phonetics, and meta-confusion. See `doc/pivot1/reason.md` for full evidence.
+→ **Claude Haiku (API).** A local model (Qwen2.5 7B) was initially considered but failed validation testing with 35% accuracy on Korean code-switching — Chinese character contamination, English term translation to Korean phonetics, and meta-confusion. See `doc/pivot1/0-reason_for_pivot.md` for full evidence.
 
 Claude Haiku handles Korean natively with no language confusion, reliable term preservation, and precise instruction following. Audio transcription (Whisper) remains fully local — only the text transcript is sent for polishing. Cost is negligible (~$0.001/transcript). The API key is stored securely in macOS Keychain via `keytar`. If the API is unavailable, the raw Whisper transcript is shown directly.
 

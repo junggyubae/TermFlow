@@ -36,6 +36,6 @@ Build these only after P0 and P1 are complete and working. Do not sacrifice core
 **Packaging approach evolved:**
 1. First attempted electron-builder + code signing — macOS Gatekeeper blocks unsigned Python binaries inside `.app` bundles. Without an Apple Developer certificate ($99/year), this doesn't simplify install.
 2. Then tried Homebrew tap — GitHub tarball checksums kept changing between Homebrew verification steps, making the formula unreliable.
-3. **Final solution:** Created `src/run/run.sh` launcher script. Single command (`git clone → chmod → ./src/run/run.sh`) handles all setup automatically. First launch prompts for API key and saves it to `~/.config/voice-dictation/api-key`; subsequent launches reuse it. This is simpler than traditional packaging, more user-friendly than manual setup, and avoids unsigned binary issues entirely.
+3. **Final solution:** Created `src/run/run.sh` launcher script. Single command (`git clone → chmod → ./src/run/run.sh`) handles all setup automatically. First launch prompts for API key and saves it to `~/.config/termflow/api-key`; subsequent launches reuse it. This is simpler than traditional packaging, more user-friendly than manual setup, and avoids unsigned binary issues entirely.
 
 **Global hotkey** was deprioritized because ⌘R works well when the app is focused, and the app window is small enough to leave visible. A future version could use `globalShortcut` in Electron's main process with a few lines of code.
