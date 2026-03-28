@@ -17,6 +17,12 @@ This app is built for the way Korean engineers, researchers, and students actual
 
 ---
 
+## Demo
+
+[2-minute demo video](https://drive.google.com/file/d/1avlQU6l_h5AK-0nlo3QlX5YVSq9Qw_xi/view?usp=share_link)
+
+---
+
 ## Quick Start
 
 ```bash
