@@ -21,8 +21,8 @@ A macOS desktop app for Korean-English bilingual voice dictation. The user speak
 See **SETUP.md** for full instructions. Quick version:
 
 ```bash
-git clone https://github.com/junggyubae/cl_r1
-cd cl_r1
+git clone https://github.com/junggyubae/TermFlow
+cd TermFlow
 chmod +x src/run/run.sh
 ./src/run/run.sh
 ```
@@ -74,3 +74,4 @@ Expected: "overfitting" and "regularization" preserved exactly; Korean unchanged
 - **Whisper model is large** — medium model is ~1.5 GB; download takes 5-10 min on first run
 - **Polish requires internet** — Claude API call requires network; raw transcript still available offline
 - **No packaged .app** — must run from source via `npx electron .` (see Stretch Goals section)
+- **Live transcription RAW text quality is low** — the live (partial) display uses the `tiny` Whisper model to keep up with real-time audio, so the intermediate text is rough. After recording stops, the full audio is re-transcribed with the `medium` model and that result is fed to Claude for polishing — the final polished output is accurate.
