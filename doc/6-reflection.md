@@ -14,6 +14,8 @@
 
 ## Would Do Differently
 
+- **First time using Claude Code and Claude Skills** — This was my first project using Claude Code as the primary development environment and Claude Skills for structured planning and review. Going through the full process revealed how powerful Skills are when used intentionally. Now that I understand the workflow, I would invoke Skills more deliberately — for example, using the plan skill at the start of each phase rather than just once upfront, and using the review skill as a checkpoint before committing to implementation rather than after.
+
 - **Start with core loop, add UI later** — I built vocab/history panels early to make demos look complete. Better approach: get recording + transcribe + polish working first, validate the pipeline, *then* add UI refinements. Would have uncovered bugs faster.
 
 - **File logging from early stage** — Debugging was painful with logs scattered across three places: terminal (main.js, Flask), stderr (recorder), and browser console. Should have written structured logs to `~/.config/voice-dictation/app.log` from the start. Would have saved hours of cross-referencing.
