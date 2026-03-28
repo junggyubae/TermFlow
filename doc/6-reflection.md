@@ -14,15 +14,14 @@
 
 ## Would Do Differently
 
-- **First time using Claude Code and Claude Skills** — This was my first project using Claude Code as the primary development environment and Claude Skills for structured planning and review. Going through the full process revealed how powerful Skills are when used intentionally. Now that I understand the workflow, I would invoke Skills more deliberately — for example, using the plan skill at the start of each phase rather than just once upfront, and using the review skill as a checkpoint before committing to implementation rather than after.
+- **First-time use of Claude Code & Skills**  
+  This was my first project using Claude Code as the primary environment and Claude Skills for structured planning/review. It showed how powerful Skills can be when used intentionally. Next time, I’d use them more deliberately: run the plan skill at the start of *each phase* (not just once), and treat the review skill as a **pre-implementation checkpoint**, not a post-hoc step.
 
-- **Start with core loop, add UI later** — I built vocab/history panels early to make demos look complete. Better approach: get recording + transcribe + polish working first, validate the pipeline, *then* add UI refinements. Would have uncovered bugs faster.
+- **Prioritize the core loop before UI**  
+  I built vocab/history panels early for demo completeness. In hindsight, it’s better to first get the full pipeline working (record → transcribe → polish), validate it end-to-end, and *then* layer UI. This would have surfaced bugs much earlier.
 
-- **File logging from early stage** — Debugging was painful with logs scattered across three places: terminal (main.js, Flask), stderr (recorder), and browser console. Should have written structured logs to `~/.config/voice-dictation/app.log` from the start. Would have saved hours of cross-referencing.
-
-- **Write sidecar tests early** — No pytest for `/transcribe` or `/polish` endpoints. Manual testing worked until edge cases (malformed vocab, streaming timeouts, empty audio) broke things. Proper test suite would have caught these before integration.
-
-- **Language detection is future scope** — Currently hardcoded to Korean-English. Auto-detection or user selection would generalize the product, but the current focus (Korean engineers/students) makes this a nice-to-have. Reasonable to defer.
+- **Set up logging from day one**  
+  I should have added file logging at the start. I missed capturing useful links and debugging context. Next time, I’ll log key references early to avoid losing valuable information.
 
 ---
 
