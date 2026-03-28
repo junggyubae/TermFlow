@@ -44,21 +44,14 @@ check_prerequisites() {
 install_python() {
   print_header "Setting up Python environment..."
 
-  cd sidecar
-
-  if [ -d "venv" ]; then
-    print_warning "venv already exists. Skipping creation."
-  else
-    python3 -m venv venv
-    echo "✓ venv created"
+  if ! command -v uv &> /dev/null; then
+    print_error "uv not found. Install it: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
   fi
 
-  # Activate venv and install
-  source venv/bin/activate
-  pip install -q -r requirements.txt
-  deactivate
-
-  echo "✓ Python dependencies installed"
+  cd sidecar
+  uv sync --quiet
+  echo "✓ Python dependencies installed (uv)"
   cd ..
 }
 

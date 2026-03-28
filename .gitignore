@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.venv/
 venv/
 *.egg-info/
 __pycache__/
@@ -10,7 +11,7 @@ __pycache__/
 *.ggml
 *.pb
 electron-app/node_modules/
-sidecar/venv/
+sidecar/.venv/
 
 # OS files
 .DS_Store

@@ -1,0 +1,10 @@
+[project]
+name = "sidecar"
+version = "0.1.0"
+description = "Flask backend for TermFlow — Whisper transcription and Claude polishing"
+requires-python = ">=3.12"
+dependencies = [
+    "faster-whisper",
+    "flask",
+    "anthropic",
+]
