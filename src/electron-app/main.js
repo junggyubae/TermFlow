@@ -5,6 +5,12 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
+// Suppress EPIPE errors from broken child-process pipes
+process.on("uncaughtException", (err) => {
+  if (err.code === "EPIPE") return;
+  console.error("[Main] Uncaught exception:", err);
+});
+
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
@@ -14,32 +20,22 @@ const SIDECAR_DIR = IS_PACKAGED
   ? path.join(RESOURCES_PATH, "sidecar")
   : path.join(RESOURCES_PATH, "src", "sidecar");
 const SIDECAR_SCRIPT = path.join(SIDECAR_DIR, "server.py");
-// Venv: use VENV_OVERRIDE (set by Homebrew launcher) or userData dir
-const VENV_DIR = process.env.VENV_OVERRIDE || path.join(app.getPath("userData"), "sidecar-venv");
-const VENV_PYTHON = path.join(VENV_DIR, "bin", "python3");
-const REQUIREMENTS = path.join(SIDECAR_DIR, "requirements.txt");
+const UV_PYTHON = path.join(SIDECAR_DIR, ".venv", "bin", "python3");
 const RECORDER_PATH = IS_PACKAGED
   ? path.join(process.resourcesPath, "recorder")
   : path.join(RESOURCES_PATH, "src", "swift-audio", "recorder");
 
 // ---------------------------------------------------------------------------
-// Venv setup
+// Python environment setup (uv)
 // ---------------------------------------------------------------------------
-function setupVenv() {
+function setupPython() {
   return new Promise((resolve, reject) => {
-    if (fs.existsSync(VENV_PYTHON)) return resolve();
-    console.log("[Main] Creating venv at", VENV_DIR);
-    const create = spawn("python3", ["-m", "venv", VENV_DIR], { stdio: "inherit" });
-    create.on("close", (code) => {
-      if (code !== 0) return reject(new Error("venv creation failed"));
-      console.log("[Main] Installing requirements...");
-      const pip = spawn(
-        path.join(VENV_DIR, "bin", "pip"),
-        ["install", "-r", REQUIREMENTS, "--quiet"],
-        { stdio: "inherit" }
-      );
-      pip.on("close", (c) => (c === 0 ? resolve() : reject(new Error("pip install failed"))));
-    });
+    if (fs.existsSync(UV_PYTHON)) return resolve();
+    console.log("[Main] Running uv sync in", SIDECAR_DIR);
+    const proc = spawn("uv", ["sync", "--quiet"], { cwd: SIDECAR_DIR, stdio: "inherit" });
+    proc.on("close", (code) =>
+      code === 0 ? resolve() : reject(new Error("uv sync failed"))
+    );
   });
 }
 
@@ -66,27 +62,34 @@ function startSidecar() {
 
   killProcessOnPort(SIDECAR_PORT);
 
-  sidecarProcess = spawn(VENV_PYTHON, [SIDECAR_SCRIPT], {
+  sidecarProcess = spawn(UV_PYTHON, [SIDECAR_SCRIPT], {
     env: { ...process.env },
     stdio: ["pipe", "pipe", "pipe"],
   });
 
   sidecarProcess.stdout.on("data", (data) => {
-    const line = data.toString().trim();
-    console.log("[Sidecar]", line);
+    try {
+      const line = data.toString().trim();
+      console.log("[Sidecar]", line);
 
-    const progressMatch = line.match(/PROGRESS:(\d+)/);
-    if (progressMatch) {
-      send("model-download-progress", { percent: parseInt(progressMatch[1]) });
-    }
+      const progressMatch = line.match(/PROGRESS:(\d+)/);
+      if (progressMatch) {
+        send("model-download-progress", { percent: parseInt(progressMatch[1]) });
+      }
+    } catch (_) { /* pipe closed */ }
   });
 
   sidecarProcess.stderr.on("data", (data) => {
-    console.error("[Sidecar ERR]", data.toString().trim());
+    try {
+      console.error("[Sidecar ERR]", data.toString().trim());
+    } catch (_) { /* pipe closed */ }
   });
 
+  sidecarProcess.stdout.on("error", () => {});
+  sidecarProcess.stderr.on("error", () => {});
+
   sidecarProcess.on("close", (code) => {
-    console.log("[Sidecar] exited with code", code);
+    try { console.log("[Sidecar] exited with code", code); } catch (_) {}
     sidecarProcess = null;
   });
 }
@@ -275,6 +278,17 @@ function streamPolish(text, vocab) {
         },
       },
       (res) => {
+        if (res.statusCode !== 200) {
+          let body = "";
+          res.on("data", (c) => (body += c));
+          res.on("end", () => {
+            const msg = (() => { try { return JSON.parse(body).error; } catch { return body; } })();
+            send("error", { code: "POLISH_FAILED", message: msg || `HTTP ${res.statusCode}` });
+            reject(new Error(msg || `HTTP ${res.statusCode}`));
+          });
+          return;
+        }
+
         let buffer = "";
         let fullText = "";
 
@@ -402,6 +416,11 @@ ipcMain.on("stop-recording", () => {
 
       send("transcription-complete", { raw: result.raw });
 
+      if (!result.raw || !result.raw.trim()) {
+        send("polish-done", { text: "" });
+        return;
+      }
+
       // Polish
       send("recording-status", { status: "polishing" });
       await streamPolish(result.raw, vocab);
@@ -449,7 +468,7 @@ app.whenReady().then(() => {
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
 
-  setupVenv()
+  setupPython()
     .then(() => {
       startSidecar();
       healthInterval = setInterval(pollHealth, 500);
